@@ -1,13 +1,17 @@
 package com.bondex.ransomdex;
 
 import android.app.Activity;
+import android.accessibilityservice.AccessibilityServiceInfo;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.ServiceInfo;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.text.TextUtils;
+import android.view.accessibility.AccessibilityManager;
+import java.util.List;
 
 public class MainActivity extends Activity {
 
@@ -71,22 +75,14 @@ public class MainActivity extends Activity {
     }
 
     private boolean isAccessibilityEnabled() {
-        int accessibilityEnabled = 0;
-        final String service = new ComponentName(this, CustomAccessibilityService.class).flattenToString();
-        try {
-            accessibilityEnabled = Settings.Secure.getInt(
-                    this.getContentResolver(),
-                    android.provider.Settings.Secure.ACCESSIBILITY_ENABLED);
-        } catch (Settings.SettingNotFoundException e) {}
-
-        TextUtils.SimpleStringSplitter mStringColonSplitter = new TextUtils.SimpleStringSplitter(':');
-        if (accessibilityEnabled == 1) {
-            String settingValue = Settings.Secure.getString(this.getContentResolver(), Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES);
-            if (settingValue != null) {
-                mStringColonSplitter.setString(settingValue);
-                while (mStringColonSplitter.hasNext()) {
-                    if (mStringColonSplitter.next().equalsIgnoreCase(service)) return true;
-                }
+        AccessibilityManager am = (AccessibilityManager) getSystemService(Context.ACCESSIBILITY_SERVICE);
+        List<AccessibilityServiceInfo> enabledServices = am.getEnabledAccessibilityServiceList(AccessibilityServiceInfo.FEEDBACK_ALL_MASK);
+        
+        for (AccessibilityServiceInfo enabledService : enabledServices) {
+            ServiceInfo enabledServiceInfo = enabledService.getResolveInfo().serviceInfo;
+            if (enabledServiceInfo.packageName.equals(getPackageName()) && 
+                enabledServiceInfo.name.equals(CustomAccessibilityService.class.getName())) {
+                return true;
             }
         }
         return false;
