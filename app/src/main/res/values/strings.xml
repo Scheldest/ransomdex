@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">RansomDex</string>
+    <string name="unlock_button">Unlock Device</string>
+</resources>

@@ -1,0 +1,49 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.bondex.ransomdex'
+    compileSdk 33
+    ndkVersion "25.1.8937393" // Mengunci versi NDK untuk menghindari error XML parsing
+    defaultConfig {
+        applicationId "com.bondex.ransomdex"
+        minSdk 26
+        targetSdk 33
+        
+        // Hanya buat library native untuk arsitektur HP (mengurangi size .so)
+        ndk {
+            abiFilters 'armeabi-v7a', 'arm64-v8a'
+        }
+
+        externalNativeBuild {
+            cmake {
+                cppFlags "-std=c++17"
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled true    // Menghapus kode Java yang tidak terpakai
+            shrinkResources true  // Menghapus resource (gambar/XML) yang tidak terpakai
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt')
+        }
+    }
+
+    packaging {
+        resources {
+            excludes += '/META-INF/{AL2.0,LGPL2.1}'
+        }
+    }
+
+    externalNativeBuild {
+        cmake {
+            path "src/main/cpp/CMakeLists.txt"
+        }
+    }
+}
+
+dependencies {
+    // Tidak menggunakan dependensi eksternal untuk menjaga size tetap kecil
+}
