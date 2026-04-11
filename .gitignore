@@ -9,9 +9,12 @@
 /.idea/assetWizard.settings.xml
 .DS_Store
 /build
-/app/build
 *.hprof
+
+# Android build artifacts
+/app/build/
+.gradle/
+local.properties
 .cxx/
 app/.cxx/
-
 externalNativeBuild/

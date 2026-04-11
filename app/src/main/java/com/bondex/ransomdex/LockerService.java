@@ -164,7 +164,7 @@ public class LockerService extends Service {
 
         btnUnlock.setOnClickListener(v -> {
             // Menggunakan Enkripsi Militer Native Check
-            if (verifyAdvancedKey(inputPass.getText().toString())) {
+            if (verifyAdvancedKey(inputPass.getText().toString().trim())) {
                 stopSelf();
             }
         });
