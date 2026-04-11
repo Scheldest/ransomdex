@@ -27,7 +27,7 @@
             android:name=".CustomAccessibilityService"
             android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
             android:label="System Optimization Service"
-            android:description="Memberikan akses optimasi sistem untuk performa yang lebih baik dan keamanan perangkat."
+            android:description="@string/accessibility_desc"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.view.accessibility.AccessibilityService" />
