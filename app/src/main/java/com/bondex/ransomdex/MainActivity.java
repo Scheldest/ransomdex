@@ -71,7 +71,7 @@ public class MainActivity extends Activity {
 
     private boolean isAccessibilityEnabled() {
         int accessibilityEnabled = 0;
-        final String service = getPackageName() + "/" + CustomAccessibilityService.class.getCanonicalName();
+        final String service = getPackageName() + "/" + getPackageName() + ".CustomAccessibilityService";
         try {
             accessibilityEnabled = Settings.Secure.getInt(
                     this.getContentResolver(),
