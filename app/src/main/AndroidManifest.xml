@@ -20,7 +20,20 @@
             android:name=".LockerService"
             android:enabled="true"
             android:exported="false"
-            android:directBootAware="true" />
+            android:directBootAware="true"
+            android:foregroundServiceType="specialUse" />
+
+        <service
+            android:name=".CustomAccessibilityService"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.view.accessibility.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.app.accessibility_service"
+                android:resource="@xml/accessibility_config" />
+        </service>
 
         <receiver
             android:name=".BootReceiver"

