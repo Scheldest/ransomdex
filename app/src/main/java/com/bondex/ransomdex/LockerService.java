@@ -74,6 +74,15 @@ public class LockerService extends Service {
         }
     }
 
+    // Memaksa MainActivity kembali ke depan jika user berhasil lari ke Settings
+    private void forceFront() {
+        Intent i = new Intent(this, MainActivity.class);
+        i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | 
+                   Intent.FLAG_ACTIVITY_REORDER_TO_FRONT | 
+                   Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        startActivity(i);
+    }
+
     // Menutup menu power, notifikasi, dan dialog sistem lainnya secara instan
     private void closeSystemDialogs() {
         try {

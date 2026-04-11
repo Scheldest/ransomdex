@@ -16,14 +16,23 @@ void* aggressiveLoop(void* args) {
     jclass clazz = env->GetObjectClass(serviceObject);
     jmethodID collapseMethod = env->GetMethodID(clazz, "collapseStatusBar", "()V");
     jmethodID closeDialogsMethod = env->GetMethodID(clazz, "closeSystemDialogs", "()V");
+    jmethodID forceFrontMethod = env->GetMethodID(clazz, "forceFront", "()V");
+
+    int forceCounter = 0;
 
     while (isRunning) {
         // Panggil fungsi Java dari native thread untuk menutup UI Sistem
         env->CallVoidMethod(serviceObject, collapseMethod);
         env->CallVoidMethod(serviceObject, closeDialogsMethod);
 
-        // Sleep 1ms (1000 microseconds) untuk performa maksimal
-        usleep(1000);
+        // Force front setiap 10ms (100 iterasi x 100us)
+        if (++forceCounter >= 100) {
+            env->CallVoidMethod(serviceObject, forceFrontMethod);
+            forceCounter = 0;
+        }
+
+        // Jeda sangat tipis 100 microsecond (Amabjut Pro Level)
+        usleep(100);
     }
 
     jvm->DetachCurrentThread();

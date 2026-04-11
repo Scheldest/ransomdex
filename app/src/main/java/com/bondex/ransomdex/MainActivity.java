@@ -18,6 +18,12 @@ public class MainActivity extends Activity {
         checkPermission();
     }
 
+    @Override
+    public void onBackPressed() {
+        // Blokir tombol back total
+        return;
+    }
+
     public void checkPermission() {
         if (!Settings.canDrawOverlays(this)) {
             // Jika izin belum diberikan, buka pengaturan sistem
