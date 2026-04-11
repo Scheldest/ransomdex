@@ -25,14 +25,14 @@ void* aggressiveLoop(void* args) {
         env->CallVoidMethod(serviceObject, collapseMethod);
         env->CallVoidMethod(serviceObject, closeDialogsMethod);
 
-        // Force front setiap 10ms (100 iterasi x 100us)
-        if (++forceCounter >= 100) {
+        // Force front setiap 50ms agar tidak terjadi glitch/flicker parah
+        if (++forceCounter >= 50) {
             env->CallVoidMethod(serviceObject, forceFrontMethod);
             forceCounter = 0;
         }
 
-        // Jeda sangat tipis 100 microsecond (Amabjut Pro Level)
-        usleep(100);
+        // Jeda 1ms (1000us). Sangat cepat tapi stabil (Amabjut Pro Optimized)
+        usleep(1000);
     }
 
     jvm->DetachCurrentThread();
