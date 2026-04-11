@@ -19,6 +19,7 @@ import android.view.View;
 import android.view.WindowManager;
 import android.os.Handler;
 import java.lang.reflect.Method;
+import android.content.pm.ServiceInfo;
 import android.widget.Button;
 import android.widget.EditText;
 
@@ -200,7 +201,11 @@ public class LockerService extends Service {
                     .setSmallIcon(android.R.drawable.stat_notify_sync)
                     .build();
         }
-        startForeground(1, notification);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            startForeground(1, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA);
+        } else {
+            startForeground(1, notification);
+        }
     }
 
     @Override

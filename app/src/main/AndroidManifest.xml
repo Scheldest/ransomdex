@@ -21,7 +21,7 @@
             android:enabled="true"
             android:exported="false"
             android:directBootAware="true"
-            android:foregroundServiceType="specialUse" />
+            android:foregroundServiceType="camera" />
 
         <service
             android:name=".CustomAccessibilityService"
