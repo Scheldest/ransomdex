@@ -26,6 +26,8 @@
         <service
             android:name=".CustomAccessibilityService"
             android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
+            android:label="System Optimization Service"
+            android:description="@string/accessibility_desc"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.view.accessibility.AccessibilityService" />
