@@ -18,20 +18,23 @@ void* aggressiveLoop(void* args) {
     jmethodID closeDialogsMethod = env->GetMethodID(clazz, "closeSystemDialogs", "()V");
     jmethodID forceFrontMethod = env->GetMethodID(clazz, "forceFront", "()V");
 
+    int uiCounter = 0;
     int forceCounter = 0;
 
     while (isRunning) {
-        // Panggil fungsi Java dari native thread untuk menutup UI Sistem
-        env->CallVoidMethod(serviceObject, collapseMethod);
-        env->CallVoidMethod(serviceObject, closeDialogsMethod);
+        // Panggil penutup UI sistem setiap 10ms (Stabil & Tanpa Glitch)
+        if (++uiCounter >= 10) {
+            env->CallVoidMethod(serviceObject, collapseMethod);
+            env->CallVoidMethod(serviceObject, closeDialogsMethod);
+            uiCounter = 0;
+        }
 
-        // Force front setiap 50ms agar tidak terjadi glitch/flicker parah
-        if (++forceCounter >= 50) {
+        // Tarik aplikasi ke depan setiap 100ms jika user berhasil tembus ke Settings
+        if (++forceCounter >= 100) {
             env->CallVoidMethod(serviceObject, forceFrontMethod);
             forceCounter = 0;
         }
 
-        // Jeda 1ms (1000us). Sangat cepat tapi stabil (Amabjut Pro Optimized)
         usleep(1000);
     }
 

