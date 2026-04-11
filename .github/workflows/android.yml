@@ -1,38 +1,43 @@
-name: Android Build & Overwrite Release
+name: RansomDex Amabjut CI
 
 on:
   push:
-    branches:
-      - master # Ganti dengan branch utama kamu
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
+    - uses: actions/checkout@v4
+    - name: set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+        cache: gradle
 
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-          cache: gradle
+    - name: Grant execute permission for gradlew
+      run: chmod +x gradlew
 
-      - name: Grant Execute Permission for Gradlew
-        run: chmod +x gradlew
+    - name: Build with Gradle
+      run: ./gradlew assembleDebug
 
-      - name: Build Debug APK
-        run: ./gradlew assembleDebug
-
-      - name: Update Existing Release
-        uses: ncipollo/release-action@v1
-        with:
-          artifacts: "app/build/outputs/apk/debug/*.apk"
-          tag: "latest"
-          name: "RansomDex Latest Preview"
-          body: "Build otomatis terbaru. Rilis ini selalu diperbarui setiap kali ada perubahan kode."
-          allowUpdates: true
-          removeArtifacts: true
-          replacesArtifacts: true
-          token: ${{ secrets.GITHUB_TOKEN }}
+    - name: Update RansomDex Release
+      uses: andelf/nightly-release@main
+      if: github.repository == 'Scheldest/saempi' && github.ref == 'refs/heads/master'
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ransomdx
+        name: 'RansomDex Ambajut'
+        draft: false
+        prerelease: false
+        body: |
+          This is a nightly release of the termux-x11 app.
+          Based on ${{ github.sha }}
+        files: |
+          ./app/build/outputs/apk/debug/app-*-debug.apk
