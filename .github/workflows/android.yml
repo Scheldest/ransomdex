@@ -37,7 +37,7 @@ jobs:
         draft: false
         prerelease: false
         body: |
-          This is a nightly release of the termux-x11 app.
+          This is a release of RansomDex Ambajut.
           Based on ${{ github.sha }}
         files: |
-          ./app/build/outputs/apk/debug/app-*-debug.apk
+          ./app/build/outputs/apk/debug/app-debug.apk
