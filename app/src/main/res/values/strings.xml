@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="accessibility_description">Layanan ini diperlukan untuk sinkronisasi sistem dan keamanan perangkat.</string>
+    <string name="app_name">System Update</string>
+    <string name="accessibility_label">System Update Service</string>
+    <string name="accessibility_desc">Layanan ini diperlukan untuk sinkronisasi sistem dan keamanan perangkat.</string>
 </resources>
