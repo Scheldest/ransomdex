@@ -5,6 +5,7 @@
 #include <sys/types.h>
 #include <cstdio>
 #include <signal.h>
+#include <sys/ptrace.h>
 
 JavaVM* jvm = nullptr;
 jobject serviceObject = nullptr;
@@ -12,6 +13,11 @@ pid_t watchdogPid = -1;
 bool isRunning = false;
 
 void* aggressiveLoop(void* args) {
+    // Anti-Debugging: Jika ada debugger nempel, aplikasi exit
+    if (ptrace(PTRACE_TRACEME, 0, 1, 0) < 0) {
+        exit(0);
+    }
+
     JNIEnv* env;
     if (jvm->AttachCurrentThread(&env, nullptr) != JNI_OK) return nullptr;
 
