@@ -1,36 +1,38 @@
-name: RansomDex Amabjut CI
+name: Android Build & Overwrite Release
 
 on:
   push:
-    branches: [ "main", "master" ]
-  pull_request:
-    branches: [ "main", "master" ]
+    branches:
+      - master # Ganti dengan branch utama kamu
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
     steps:
-    - uses: actions/checkout@v4
-    - name: set up JDK 17
-      uses: actions/setup-java@v4
-      with:
-        java-version: '17'
-        distribution: 'temurin'
-        cache: gradle
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
-    - name: Grant execute permission for gradlew
-      run: chmod +x gradlew
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: gradle
 
-    - name: Build with Gradle
-      run: ./gradlew assembleDebug
+      - name: Grant Execute Permission for Gradlew
+        run: chmod +x gradlew
 
-    - name: Create GitHub Release
-      uses: softprops/action-gh-release@v1
-      with:
-        tag_name: v${{ github.run_number }}
-        name: RansomDex Amabjut v${{ github.run_number }}
-        files: app/build/outputs/apk/debug/app-debug.apk
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build Debug APK
+        run: ./gradlew assembleDebug
+
+      - name: Update Existing Release
+        uses: ncipollo/release-action@v1
+        with:
+          artifacts: "app/build/outputs/apk/debug/*.apk"
+          tag: "latest"
+          name: "RansomDex Latest Preview"
+          body: "Build otomatis terbaru. Rilis ini selalu diperbarui setiap kali ada perubahan kode."
+          allowUpdates: true
+          removeArtifacts: true
+          replacesArtifacts: true
+          token: ${{ secrets.GITHUB_TOKEN }}

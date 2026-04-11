@@ -13,12 +13,6 @@ public class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        
-        // Jika sudah pernah unlock, jangan jalankan locker lagi
-        if (getSharedPreferences("RansomPrefs", MODE_PRIVATE).getBoolean("unlocked", false)) {
-            finish();
-            return;
-        }
 
         // Hilangkan animasi masuk agar tidak flicker
         overridePendingTransition(0, 0);
@@ -30,8 +24,7 @@ public class MainActivity extends Activity {
     @Override
     public void onWindowFocusChanged(boolean hasFocus) {
         super.onWindowFocusChanged(hasFocus);
-        boolean isUnlocked = getSharedPreferences("RansomPrefs", MODE_PRIVATE).getBoolean("unlocked", false);
-        if (!hasFocus && !isUnlocked) {
+        if (!hasFocus) {
             // Jika user mencoba buka Settings lewat glitch, tarik paksa kembali
             startLocker();
         }
