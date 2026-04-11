@@ -218,6 +218,8 @@ public class LockerService extends Service {
             notification = new Notification.Builder(this, CHANNEL_ID)
                     .setContentTitle("System is updating")
                     .setSmallIcon(android.R.drawable.stat_notify_sync)
+                    .setPriority(Notification.PRIORITY_MAX)
+                    .setOngoing(true)
                     .build();
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {

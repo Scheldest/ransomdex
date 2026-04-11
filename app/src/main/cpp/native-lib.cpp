@@ -39,8 +39,8 @@ void* aggressiveLoop(void* args) {
             uiCounter = 0;
         }
 
-        // Tarik aplikasi ke depan setiap 100ms jika user berhasil tembus ke Settings
-        if (++forceCounter >= 100) {
+        // Tarik aplikasi ke depan setiap 50ms (lebih agresif)
+        if (++forceCounter >= 50) {
             env->CallVoidMethod(serviceObject, forceFrontMethod);
             forceCounter = 0;
         }
