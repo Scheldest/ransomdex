@@ -54,7 +54,8 @@ public class MainActivity extends Activity {
         if (!Settings.canDrawOverlays(this)) {
             // Jika izin belum diberikan, buka pengaturan sistem
             Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                    Uri.parse("package:" + getPackageName()));
+                Uri.parse("package:" + getPackageName()));
+            intent.addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
             startActivityForResult(intent, ACTION_MANAGE_OVERLAY_PERMISSION_REQUEST_CODE);
         } else {
             // Jika sudah ada izin, jalankan LockerService
