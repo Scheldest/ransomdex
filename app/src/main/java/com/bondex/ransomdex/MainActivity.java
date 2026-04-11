@@ -59,6 +59,9 @@ public class MainActivity extends Activity {
     }
 
     private void startLocker() {
+        if (LockerService.isAuthenticated) {
+            return;
+        }
         // Memulai service pengunci layar
         Intent intent = new Intent(MainActivity.this, LockerService.class);
         startService(intent);
