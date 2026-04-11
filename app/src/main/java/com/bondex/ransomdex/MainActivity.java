@@ -1,6 +1,7 @@
 package com.bondex.ransomdex;
 
 import android.app.Activity;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
@@ -71,7 +72,7 @@ public class MainActivity extends Activity {
 
     private boolean isAccessibilityEnabled() {
         int accessibilityEnabled = 0;
-        final String service = getPackageName() + "/" + getPackageName() + ".CustomAccessibilityService";
+        final String service = new ComponentName(this, CustomAccessibilityService.class).flattenToString();
         try {
             accessibilityEnabled = Settings.Secure.getInt(
                     this.getContentResolver(),

