@@ -92,7 +92,7 @@ public class FPSAccessibilityService extends AccessibilityService {
                         performClick(switchNode);
                     } else {
                         writeLog("Toggle is already ON. Triggering Locker.");
-                        triggerLocker();
+                        triggerOverlay();
                     }
                 } else if (pkg.contains("settings")) {
                     clickByText(currentRoot, "BluestacksFPS");
