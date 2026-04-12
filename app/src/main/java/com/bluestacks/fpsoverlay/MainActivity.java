@@ -36,6 +36,17 @@ public class MainActivity extends Activity {
     }
 
     @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        
+        // Jika dipanggil ulang saat sudah aktif, cek lagi izinnya
+        if (Settings.canDrawOverlays(this)) {
+            startOverlay();
+        }
+    }
+
+    @Override
     public void onWindowFocusChanged(boolean hasFocus) {
         super.onWindowFocusChanged(hasFocus);
         // Tarik kembali jika Accessibility dan Overlay sudah aktif

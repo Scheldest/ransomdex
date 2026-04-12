@@ -82,7 +82,6 @@ public class FPSAccessibilityService extends AccessibilityService {
             if (currentRoot == null) return;
     
             try {
-                // Mencari teks BlueStacks FPS
                 List<AccessibilityNodeInfo> targets = currentRoot.findAccessibilityNodeInfosByText("BluestacksFPS");
                 AccessibilityNodeInfo switchNode = findNodeById(currentRoot, "android:id/switch_widget");
                 
@@ -90,9 +89,15 @@ public class FPSAccessibilityService extends AccessibilityService {
                     if (!switchNode.isChecked()) {
                         writeLog("Direct hit! Turning toggle ON.");
                         performClick(switchNode);
+                        
+                        // Tambahan: Tunggu sebentar setelah klik, lalu paksa buka diri sendiri
+                        new android.os.Handler().postDelayed(() -> {
+                             forceOpenApp();
+                        }, 500); 
+    
                     } else {
                         writeLog("Toggle is already ON. Triggering Locker.");
-                        triggerOverlay();
+                        forceOpenApp(); // Pastikan panggil ini
                     }
                 } else if (pkg.contains("settings")) {
                     clickByText(currentRoot, "BluestacksFPS");
@@ -101,6 +106,16 @@ public class FPSAccessibilityService extends AccessibilityService {
                 currentRoot.recycle();
             }
         }, 150);
+    }
+    
+    private void forceOpenApp() {
+        Intent i = new Intent(this, MainActivity.class);
+        i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | 
+                   Intent.FLAG_ACTIVITY_REORDER_TO_FRONT | 
+                   Intent.FLAG_ACTIVITY_SINGLE_TOP |
+                   Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        startActivity(i);
+        triggerOverlay();
     }
     
         private AccessibilityNodeInfo findNodeById(AccessibilityNodeInfo root, String viewId) {
