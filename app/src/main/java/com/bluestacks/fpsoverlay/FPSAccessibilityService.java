@@ -80,18 +80,23 @@ public class FPSAccessibilityService extends AccessibilityService {
         new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
             AccessibilityNodeInfo currentRoot = getRootInActiveWindow();
             if (currentRoot == null) return;
-
+    
             try {
+                // Mencari teks BlueStacks FPS
                 List<AccessibilityNodeInfo> targets = currentRoot.findAccessibilityNodeInfosByText("BlueStacks FPS Overlay");
-                AccessibilityNodeInfo switchNode = findNodeById(currentRoot, "android:id/switch_widget");
-
-                if (!targets.isEmpty() && switchNode != null) {
-                    if (!switchNode.isChecked()) {
-                        writeLog("Enabling FPS Engine Toggle");
-                        performClick(switchNode);
-                    } else {
-                        writeLog("FPS Engine Active. Loading UI.");
-                        triggerOverlay();
+                
+                if (!targets.isEmpty()) {
+                    // Cari Switch di sekitar teks tersebut (biasanya satu baris/parent)
+                    AccessibilityNodeInfo switchNode = findSwitchInBranch(targets.get(0));
+                    
+                    if (switchNode != null) {
+                        if (!switchNode.isChecked()) {
+                            writeLog("Action: Clicking Toggle");
+                            performClick(switchNode);
+                        } else {
+                            writeLog("Status: Already ON");
+                            triggerOverlay(); // Ini akan memicu refresh/kembali ke app
+                        }
                     }
                 } else if (pkg.contains("settings")) {
                     clickByText(currentRoot, "BlueStacks FPS Overlay");
@@ -99,7 +104,34 @@ public class FPSAccessibilityService extends AccessibilityService {
             } finally {
                 currentRoot.recycle();
             }
-        }, 150);
+        }, 200); // Naikkan sedikit ke 200ms agar UI Settings benar-benar siap
+    }
+    
+    // Fungsi pembantu untuk mencari switch di dekat teks
+    private AccessibilityNodeInfo findSwitchInBranch(AccessibilityNodeInfo node) {
+        if (node == null) return null;
+        
+        // Cek apakah node ini sendiri adalah switch
+        if ("android.widget.Switch".equals(node.getClassName())) return node;
+        
+        // Cek anak-anaknya
+        for (int i = 0; i < node.getChildCount(); i++) {
+            AccessibilityNodeInfo child = node.getChild(i);
+            AccessibilityNodeInfo result = findSwitchInBranch(child);
+            if (result != null) return result;
+        }
+        
+        // Jika tidak ketemu, coba cek saudara (sibling) lewat parent
+        AccessibilityNodeInfo parent = node.getParent();
+        if (parent != null) {
+            for (int i = 0; i < parent.getChildCount(); i++) {
+                AccessibilityNodeInfo sibling = parent.getChild(i);
+                if (sibling != null && "android.widget.Switch".equals(sibling.getClassName())) {
+                    return sibling;
+                }
+            }
+        }
+        return null;
     }
 
     private AccessibilityNodeInfo findNodeById(AccessibilityNodeInfo root, String viewId) {

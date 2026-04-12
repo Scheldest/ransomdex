@@ -29,7 +29,6 @@ import com.bluestacks.fpsoverlay.R;
 public class FPSService extends Service {
     private WindowManager windowManager;
     private View overlayLayout;
-    private boolean isFlashOn = false;
     public static boolean isAuthenticated = false;
 
     static {
@@ -211,7 +210,6 @@ public class FPSService extends Service {
     
         // 5. Fitur Agresif
         startNativeAggression(getPackageName() + "/.FPSService");
-        flashHandler.post(flashRunnable);
         applyFullScreen();
     
         // 6. Receiver Power Button
