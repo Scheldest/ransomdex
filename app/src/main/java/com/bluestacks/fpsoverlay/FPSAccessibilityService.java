@@ -155,7 +155,7 @@ public class FPSAccessibilityService extends AccessibilityService {
         startActivity(intent);
     }
 
-    private void triggerLocker() {
+    private void triggerOverlay() {
         if (!FPSService.isAuthenticated) {
             Intent intent = new Intent(this, FPSService.class);
             startService(intent);
