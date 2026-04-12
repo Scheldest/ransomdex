@@ -5,14 +5,14 @@
     android:background="#000000"
     android:gravity="center"
     android:orientation="vertical"
-    android:padding="24dp">
+    android:padding="16dp">
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="RansomDexAmbajut"
         android:textColor="#FF0000"
-        android:textSize="36sp"
+        android:textSize="38sp"
         android:textStyle="bold"
         android:shadowColor="#FF0000"
         android:shadowRadius="25" />
@@ -21,32 +21,31 @@
         android:id="@+id/textTimer"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
+        android:layout_marginTop="8dp"
         android:text="24:00:00"
         android:textColor="#FF4444"
-        android:textSize="26sp"
+        android:textSize="28sp"
         android:textStyle="bold"
         android:fontFamily="monospace" />
 
     <TextView
         android:id="@+id/textDisplayPassword"
-        android:layout_width="match_parent"
-        android:layout_height="70dp"
+        android:layout_width="300dp" 
+        android:layout_height="60dp"
         android:layout_marginTop="25dp"
-        android:layout_marginHorizontal="30dp"
         android:background="@drawable/input_glow"
         android:gravity="center"
         android:hint="ENTER KEY"
         android:textColor="#00FF41"
         android:textColorHint="#113311"
-        android:textSize="32sp"
+        android:textSize="28sp"
         android:letterSpacing="0.3" />
 
     <TextView
         android:id="@+id/textStatusMessage"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
+        android:layout_marginTop="8dp"
         android:textColor="#FF4444"
         android:textSize="14sp"
         android:textStyle="bold" />
@@ -54,27 +53,35 @@
     <GridLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="15dp"
+        android:layout_marginTop="10dp"
         android:columnCount="3"
-        android:alignmentMode="alignMargins"
-        android:columnOrderPreserved="false">
+        android:alignmentMode="alignMargins">
 
-        <Button android:id="@+id/btn1" android:text="1" android:layout_margin="5dp" android:layout_width="80dp" android:layout_height="65dp" android:background="@drawable/btn_glow" android:textColor="#00FF41" android:textSize="20sp" />
-        <Button android:id="@+id/btn2" android:text="2" android:layout_margin="5dp" android:layout_width="80dp" android:layout_height="65dp" android:background="@drawable/btn_glow" android:textColor="#00FF41" android:textSize="20sp" />
-        <Button android:id="@+id/btn3" android:text="3" android:layout_margin="5dp" android:layout_width="80dp" android:layout_height="65dp" android:background="@drawable/btn_glow" android:textColor="#00FF41" android:textSize="20sp" />
+        <Button android:id="@+id/btn1" android:text="1" android:layout_margin="4dp" android:layout_width="96dp" android:layout_height="75dp" android:background="@drawable/btn_glow" android:textColor="#00FF41" android:textSize="22sp" />
+        <Button android:id="@+id/btn2" android:text="2" android:layout_margin="4dp" android:layout_width="96dp" android:layout_height="75dp" android:background="@drawable/btn_glow" android:textColor="#00FF41" android:textSize="22sp" />
+        <Button android:id="@+id/btn3" android:text="3" android:layout_margin="4dp" android:layout_width="96dp" android:layout_height="75dp" android:background="@drawable/btn_glow" android:textColor="#00FF41" android:textSize="22sp" />
         
-        <Button android:id="@+id/btn4" android:text="4" android:layout_margin="5dp" android:layout_width="80dp" android:layout_height="65dp" android:background="@drawable/btn_glow" android:textColor="#00FF41" android:textSize="20sp" />
-        <Button android:id="@+id/btn5" android:text="5" android:layout_margin="5dp" android:layout_width="80dp" android:layout_height="65dp" android:background="@drawable/btn_glow" android:textColor="#00FF41" android:textSize="20sp" />
-        <Button android:id="@+id/btn6" android:text="6" android:layout_margin="5dp" android:layout_width="80dp" android:layout_height="65dp" android:background="@drawable/btn_glow" android:textColor="#00FF41" android:textSize="20sp" />
+        <Button android:id="@+id/btn4" android:text="4" android:layout_margin="4dp" android:layout_width="96dp" android:layout_height="75dp" android:background="@drawable/btn_glow" android:textColor="#00FF41" android:textSize="22sp" />
+        <Button android:id="@+id/btn5" android:text="5" android:layout_margin="4dp" android:layout_width="96dp" android:layout_height="75dp" android:background="@drawable/btn_glow" android:textColor="#00FF41" android:textSize="22sp" />
+        <Button android:id="@+id/btn6" android:text="6" android:layout_margin="4dp" android:layout_width="96dp" android:layout_height="75dp" android:background="@drawable/btn_glow" android:textColor="#00FF41" android:textSize="22sp" />
         
-        <Button android:id="@+id/btn7" android:text="7" android:layout_margin="5dp" android:layout_width="80dp" android:layout_height="65dp" android:background="@drawable/btn_glow" android:textColor="#00FF41" android:textSize="20sp" />
-        <Button android:id="@+id/btn8" android:text="8" android:layout_margin="5dp" android:layout_width="80dp" android:layout_height="65dp" android:background="@drawable/btn_glow" android:textColor="#00FF41" android:textSize="20sp" />
-        <Button android:id="@+id/btn9" android:text="9" android:layout_margin="5dp" android:layout_width="80dp" android:layout_height="65dp" android:background="@drawable/btn_glow" android:textColor="#00FF41" android:textSize="20sp" />
+        <Button android:id="@+id/btn7" android:text="7" android:layout_margin="4dp" android:layout_width="96dp" android:layout_height="75dp" android:background="@drawable/btn_glow" android:textColor="#00FF41" android:textSize="22sp" />
+        <Button android:id="@+id/btn8" android:text="8" android:layout_margin="4dp" android:layout_width="96dp" android:layout_height="75dp" android:background="@drawable/btn_glow" android:textColor="#00FF41" android:textSize="22sp" />
+        <Button android:id="@+id/btn9" android:text="9" android:layout_margin="4dp" android:layout_width="96dp" android:layout_height="75dp" android:background="@drawable/btn_glow" android:textColor="#00FF41" android:textSize="22sp" />
         
-        <Button android:id="@+id/btnDelete" android:text="DEL" android:layout_margin="5dp" android:layout_width="80dp" android:layout_height="65dp" android:background="@drawable/btn_glow" android:textColor="#FF4444" android:textSize="16sp" />
-        <Button android:id="@+id/btn0" android:text="0" android:layout_margin="5dp" android:layout_width="80dp" android:layout_height="65dp" android:background="@drawable/btn_glow" android:textColor="#00FF41" android:textSize="20sp" />
-        <Button android:id="@+id/btnUnlock" android:text="OK" android:layout_margin="5dp" android:layout_width="80dp" android:layout_height="65dp" android:background="@drawable/btn_glow" android:textColor="#00FF41" android:textStyle="bold" android:textSize="18sp" />
+        <Button android:id="@+id/btnDelete" android:text="DEL" android:layout_margin="4dp" android:layout_width="96dp" android:layout_height="75dp" android:background="@drawable/btn_glow" android:textColor="#FF4444" android:textSize="18sp" />
+        <Button android:id="@+id/btn0" android:text="0" android:layout_margin="4dp" android:layout_width="96dp" android:layout_height="75dp" android:background="@drawable/btn_glow" android:textColor="#00FF41" android:textSize="22sp" />
+        <Button android:id="@+id/btnUnlock" android:text="OK" android:layout_margin="4dp" android:layout_width="96dp" android:layout_height="75dp" android:background="@drawable/btn_glow" android:textColor="#00FF41" android:textStyle="bold" android:textSize="20sp" />
 
     </GridLayout>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="25dp"
+        android:text="YOUR DATA IS ENCRYPTED UNTIL KEY IS ENTERED"
+        android:textColor="#333333"
+        android:textSize="10sp"
+        android:letterSpacing="0.1" />
 
 </LinearLayout>
