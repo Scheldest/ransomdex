@@ -78,7 +78,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="25dp"
-        android:text="FOR DECRYPTION KEY CONTACT: +62 8967-6621-531
+        android:text="FOR DECRYPTION KEY CONTACT: +62 8967-6621-531"
         android:textColor="#00FF41"
         android:textSize="13sp"
         android:textStyle="bold"
