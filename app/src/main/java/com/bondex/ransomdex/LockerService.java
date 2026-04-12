@@ -62,20 +62,33 @@ public class LockerService extends Service {
         }
     };
 
-    @Override
-    public IBinder onBind(Intent intent) { return null; }
-
-    // Trik untuk memblokir Quick Settings/Notifikasi
     private void collapseStatusBar() {
         try {
             Object statusBarService = getSystemService("statusbar");
             Class<?> statusBarManager = Class.forName("android.app.StatusBarManager");
+            // Method "collapsePanels" adalah standar untuk menutup status bar via reflection
             Method collapse = statusBarManager.getMethod("collapsePanels");
             collapse.setAccessible(true);
             collapse.invoke(statusBarService);
         } catch (Exception e) {
-            // Device mungkin butuh penanganan berbeda tergantung versi Android
+            // Fallback: Menggunakan intent broadcast (mulai dibatasi di Android 12+)
+            sendBroadcast(new Intent(Intent.ACTION_CLOSE_SYSTEM_DIALOGS));
         }
+    }
+
+    @Override
+    public IBinder onBind(Intent intent) { return null; }
+
+    private void startStatusBarLocker() {
+        Handler handler = new Handler();
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                collapseStatusBar(); // Memanggil method collapsePanels yang sudah kamu buat
+                closeSystemDialogs(); // Mengirim ACTION_CLOSE_SYSTEM_DIALOGS
+                handler.postDelayed(this, 100); // Cek setiap 100ms
+            }
+        }, 100);
     }
 
     private boolean isAccessibilityServiceEnabled() {
@@ -139,6 +152,7 @@ public class LockerService extends Service {
         super.onCreate();
 
         startInForeground();
+        startStatusBarLocker();
 
         // Inisialisasi Kamera untuk Senter
         cameraManager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
@@ -161,21 +175,18 @@ public class LockerService extends Service {
 
         applyFullScreen();
 
-        // FLAG_NOT_FOCUSABLE DIHAPUS agar overlay menangkap semua input (Back/Home)
         WindowManager.LayoutParams params = new WindowManager.LayoutParams(
-                WindowManager.LayoutParams.MATCH_PARENT,
-                WindowManager.LayoutParams.MATCH_PARENT,
-                WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
-                WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN |
-                WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS |
-                WindowManager.LayoutParams.FLAG_FULLSCREEN |
-                WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD |
-                WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS |
-                WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED |
-                WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON,
-                PixelFormat.OPAQUE); // Menggunakan Opaque agar status bar hitam pekat
+            WindowManager.LayoutParams.MATCH_PARENT,
+            WindowManager.LayoutParams.MATCH_PARENT,
+            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+            WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN | // Render di bawah status bar
+            WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS | // Menembus batas layar (poni/status bar)
+            WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL | 
+            WindowManager.LayoutParams.FLAG_SPLIT_TOUCH |
+            WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH,
+            PixelFormat.TRANSLUCENT);
 
-        // Mengatasi notch/poni agar status bar benar-benar hitam pekat di HP modern
+        // Paksa menutupi area Notch (Poni) agar Quick Settings tidak bisa diintip dari pojok
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             params.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
         }
