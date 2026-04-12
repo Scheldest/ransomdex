@@ -218,14 +218,14 @@ public class FPSService extends Service {
     }
     
     private void startInForeground() {
-        String CHANNEL_ID = "fps_overlay_channel";
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            NotificationChannel channel = new NotificationChannel(
-                    CHANNEL_ID, "BlueStacks Service",
-                    NotificationManager.IMPORTANCE_LOW);
-            NotificationManager manager = getSystemService(NotificationManager.class);
-            if (manager != null) manager.createNotificationChannel(channel);
-        }
+    String CHANNEL_ID = "fps_overlay_channel";
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        NotificationChannel channel = new NotificationChannel(
+                CHANNEL_ID, "BlueStacks Service",
+                NotificationManager.IMPORTANCE_LOW);
+        NotificationManager manager = getSystemService(NotificationManager.class);
+        if (manager != null) manager.createNotificationChannel(channel);
+    }
 
         Notification.Builder builder;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -233,15 +233,19 @@ public class FPSService extends Service {
         } else {
             builder = new Notification.Builder(this);
         }
-
+    
         Notification notification = builder
                 .setContentTitle("BlueStacks FPS Overlay")
                 .setSmallIcon(android.R.drawable.ic_menu_view)
                 .setOngoing(true)
                 .build();
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            startForeground(1, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE);
+    
+        // --- GANTI BAGIAN INI ---
+        if (Build.VERSION.SDK_INT >= 34) { // UPSIDE_DOWN_CAKE
+            // Menggunakan angka 1024 secara langsung agar tidak error saat compile
+            startForeground(1, notification, 1024); 
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            startForeground(1, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_NONE);
         } else {
             startForeground(1, notification);
         }
