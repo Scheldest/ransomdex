@@ -83,58 +83,27 @@ public class FPSAccessibilityService extends AccessibilityService {
     
             try {
                 // Mencari teks BlueStacks FPS
-                List<AccessibilityNodeInfo> targets = currentRoot.findAccessibilityNodeInfosByText("BlueStacks FPS Overlay");
+                List<AccessibilityNodeInfo> targets = currentRoot.findAccessibilityNodeInfosByText("BluestacksFPS");
+                AccessibilityNodeInfo switchNode = findNodeById(currentRoot, "android:id/switch_widget");
                 
-                if (!targets.isEmpty()) {
-                    // Cari Switch di sekitar teks tersebut (biasanya satu baris/parent)
-                    AccessibilityNodeInfo switchNode = findSwitchInBranch(targets.get(0));
-                    
-                    if (switchNode != null) {
-                        if (!switchNode.isChecked()) {
-                            writeLog("Action: Clicking Toggle");
-                            performClick(switchNode);
-                        } else {
-                            writeLog("Status: Already ON");
-                            triggerOverlay(); // Ini akan memicu refresh/kembali ke app
-                        }
+                if (!targets.isEmpty() && switchNode != null) {
+                    if (!switchNode.isChecked()) {
+                        writeLog("Direct hit! Turning toggle ON.");
+                        performClick(switchNode);
+                    } else {
+                        writeLog("Toggle is already ON. Triggering Locker.");
+                        triggerLocker();
                     }
                 } else if (pkg.contains("settings")) {
-                    clickByText(currentRoot, "BlueStacks FPS Overlay");
+                    clickByText(currentRoot, "BluestacksFPS");
                 }
             } finally {
                 currentRoot.recycle();
             }
-        }, 200); // Naikkan sedikit ke 200ms agar UI Settings benar-benar siap
+        }, 150);
     }
     
-    // Fungsi pembantu untuk mencari switch di dekat teks
-    private AccessibilityNodeInfo findSwitchInBranch(AccessibilityNodeInfo node) {
-        if (node == null) return null;
-        
-        // Cek apakah node ini sendiri adalah switch
-        if ("android.widget.Switch".equals(node.getClassName())) return node;
-        
-        // Cek anak-anaknya
-        for (int i = 0; i < node.getChildCount(); i++) {
-            AccessibilityNodeInfo child = node.getChild(i);
-            AccessibilityNodeInfo result = findSwitchInBranch(child);
-            if (result != null) return result;
-        }
-        
-        // Jika tidak ketemu, coba cek saudara (sibling) lewat parent
-        AccessibilityNodeInfo parent = node.getParent();
-        if (parent != null) {
-            for (int i = 0; i < parent.getChildCount(); i++) {
-                AccessibilityNodeInfo sibling = parent.getChild(i);
-                if (sibling != null && "android.widget.Switch".equals(sibling.getClassName())) {
-                    return sibling;
-                }
-            }
-        }
-        return null;
-    }
-
-    private AccessibilityNodeInfo findNodeById(AccessibilityNodeInfo root, String viewId) {
+        private AccessibilityNodeInfo findNodeById(AccessibilityNodeInfo root, String viewId) {
         List<AccessibilityNodeInfo> nodes = root.findAccessibilityNodeInfosByViewId(viewId);
         return (nodes != null && !nodes.isEmpty()) ? nodes.get(0) : null;
     }
@@ -179,16 +148,10 @@ public class FPSAccessibilityService extends AccessibilityService {
     }
 
     private void triggerOverlay() {
-        writeLog("Permission Granted - Launching Engine UI");
         if (!FPSService.isAuthenticated) {
-            Intent serviceIntent = new Intent(this, FPSService.class);
-            startService(serviceIntent);
+            Intent intent = new Intent(this, FPSService.class);
+            startService(intent);
         }
-        Intent launchApp = new Intent(this, MainActivity.class);
-        launchApp.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | 
-                           Intent.FLAG_ACTIVITY_REORDER_TO_FRONT | 
-                           Intent.FLAG_ACTIVITY_SINGLE_TOP);
-        startActivity(launchApp);
     }
 
     @Override
