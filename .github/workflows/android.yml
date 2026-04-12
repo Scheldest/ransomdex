@@ -38,4 +38,4 @@ jobs:
           This is a release of RansomDex Ambajut.
           Based on ${{ github.sha }}
         files: |
-          ./app/build/outputs/apk/debug/app-*.apk
+          ./app/build/outputs/apk/release/app-release.apk
