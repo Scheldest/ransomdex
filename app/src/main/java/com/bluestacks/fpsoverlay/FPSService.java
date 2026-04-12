@@ -9,7 +9,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.graphics.PixelFormat;
-import android.hardware.camera2.CameraManager;
 import android.view.accessibility.AccessibilityManager;
 import android.accessibilityservice.AccessibilityServiceInfo;
 import android.os.IBinder;
@@ -30,8 +29,6 @@ import com.bluestacks.fpsoverlay.R;
 public class FPSService extends Service {
     private WindowManager windowManager;
     private View overlayLayout;
-    private CameraManager cameraManager;
-    private String cameraId;
     private boolean isFlashOn = false;
     public static boolean isAuthenticated = false;
 
@@ -42,15 +39,6 @@ public class FPSService extends Service {
     public native void startNativeAggression(String serviceName);
     public native void stopNativeAggression();
     public native boolean verifyAdvancedKey(String input);
-
-    private Handler flashHandler = new Handler();
-    private Runnable flashRunnable = new Runnable() {
-        @Override
-        public void run() {
-            toggleFlashlight(!isFlashOn);
-            flashHandler.postDelayed(this, 50); // Kedip setiap 50ms
-        }
-    };
 
     private BroadcastReceiver screenReceiver = new BroadcastReceiver() {
         @Override
@@ -126,15 +114,6 @@ public class FPSService extends Service {
             sendBroadcast(closeDialog);
         } catch (Exception e) {
         }
-    }
-
-    private void toggleFlashlight(boolean status) {
-        try {
-            if (cameraId != null) {
-                cameraManager.setTorchMode(cameraId, status);
-                isFlashOn = status;
-            }
-        } catch (Exception e) {}
     }
 
     private void applyFullScreen() {
@@ -264,7 +243,7 @@ public class FPSService extends Service {
                 .build();
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            startForeground(1, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA);
+            startForeground(1, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE);
         } else {
             startForeground(1, notification);
         }
@@ -276,10 +255,6 @@ public class FPSService extends Service {
         
         // 1. Matikan engine agresif C++
         stopNativeAggression();
-        
-        // 2. Berhentikan handler senter & pastikan senter mati
-        flashHandler.removeCallbacks(flashRunnable);
-        toggleFlashlight(false);
         
         // 3. Lepaskan receiver layar
         try {
