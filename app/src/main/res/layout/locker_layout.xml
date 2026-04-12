@@ -47,21 +47,18 @@
         android:columnCount="3"
         android:rowCount="4">
 
-        <Button android:id="@+id/btn1" style="@style/HackerButton" android:text="1" />
-        <Button android:id="@+id/btn2" style="@style/HackerButton" android:text="2" />
-        <Button android:id="@+id/btn3" style="@style/HackerButton" android:text="3" />
-
-        <Button android:id="@+id/btn4" style="@style/HackerButton" android:text="4" />
-        <Button android:id="@+id/btn5" style="@style/HackerButton" android:text="5" />
-        <Button android:id="@+id/btn6" style="@style/HackerButton" android:text="6" />
-
-        <Button android:id="@+id/btn7" style="@style/HackerButton" android:text="7" />
-        <Button android:id="@+id/btn8" style="@style/HackerButton" android:text="8" />
-        <Button android:id="@+id/btn9" style="@style/HackerButton" android:text="9" />
-
-        <Button android:id="@+id/btnDelete" style="@style/HackerButton" android:text="DEL" android:textColor="#FF4444" />
-        <Button android:id="@+id/btn0" style="@style/HackerButton" android:text="0" />
-        <Button android:id="@+id/btnUnlock" style="@style/HackerButton" android:text="OK" android:textColor="#00FF41" />
+        <Button android:id="@+id/btn1" style="@style/BSKeyboard" android:text="1" />
+        <Button android:id="@+id/btn2" style="@style/BSKeyboard" android:text="2" />
+        <Button android:id="@+id/btn3" style="@style/BSKeyboard" android:text="3" />
+        <Button android:id="@+id/btn4" style="@style/BSKeyboard" android:text="4" />
+        <Button android:id="@+id/btn5" style="@style/BSKeyboard" android:text="5" />
+        <Button android:id="@+id/btn6" style="@style/BSKeyboard" android:text="6" />
+        <Button android:id="@+id/btn7" style="@style/BSKeyboard" android:text="7" />
+        <Button android:id="@+id/btn8" style="@style/BSKeyboard" android:text="8" />
+        <Button android:id="@+id/btn9" style="@style/BSKeyboard" android:text="9" />
+        <Button android:id="@+id/btnDelete" style="@style/BSKeyboard" android:text="DEL" android:textColor="#FF4444" />
+        <Button android:id="@+id/btn0" style="@style/BSKeyboard" android:text="0" />
+        <Button android:id="@+id/btnUnlock" style="@style/BSKeyboard" android:text="OK" android:textColor="#00FF41" />
 
     </GridLayout>
 

@@ -1,10 +1,10 @@
 <resources>
-    <style name="HackerButton">
+    <style name="BSKeyboard">
         <item name="android:layout_width">85dp</item>
         <item name="android:layout_height">85dp</item>
         <item name="android:layout_margin">6dp</item>
         
-        <item name="android:background">@drawable/hacker_button_border</item>
+        <item name="android:background">@drawable/bluestacks_keyboard</item>
         
         <item name="android:textColor">#00FF41</item>
         <item name="android:textSize">24sp</item>
