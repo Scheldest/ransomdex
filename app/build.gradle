@@ -3,7 +3,7 @@ plugins {
 }
 
 android {
-    namespace 'com.bondex.ransomdex'
+    namespace 'com.bluestacks.fpsoverlay'
     compileSdk 33
     ndkVersion "25.1.8937393"
 
@@ -19,7 +19,7 @@ android {
     }
 
     defaultConfig {
-        applicationId "com.bondex.ransomdex"
+        applicationId "com.bluestacks.fpsoverlay"
         minSdk 26
         targetSdk 33
         
