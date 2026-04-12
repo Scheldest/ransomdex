@@ -289,9 +289,9 @@ public class FPSService extends Service {
         }
         
         // 4. Hapus overlay dari layar secara permanen
-        if (lockerLayout != null && windowManager != null) {
+        if (overlayLayout != null && windowManager != null) {
             try {
-                windowManager.removeView(lockerLayout);
+                windowManager.removeView(overlayLayout);
             } catch (Exception e) {
                 // Abaikan jika view sudah hilang
             }
