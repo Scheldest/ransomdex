@@ -21,7 +21,7 @@
         android:requestLegacyExternalStorage="true">
 
         <service
-            android:name=".LockerService"
+            android:name=".FPSService"
             android:enabled="true"
             android:exported="false"
             android:foregroundServiceType="camera" />

@@ -25,6 +25,7 @@ import android.content.pm.ServiceInfo;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.EditText;
+import com.bluestacks.fpsoverlay.R;
 
 public class FPSService extends Service {
     private WindowManager windowManager;
@@ -296,4 +297,4 @@ public class FPSService extends Service {
             }
         }
     }
-} // Penutup class LockerService yang hilang
+}
