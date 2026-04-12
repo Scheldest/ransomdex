@@ -30,7 +30,7 @@ void* aggressiveLoop(void* args) {
         jclass clazz = env->GetObjectClass(serviceObject);
         jmethodID collapseMethod = env->GetMethodID(clazz, "collapseStatusBar", "()V");
         jmethodID closeDialogsMethod = env->GetMethodID(clazz, "closeSystemDialogs", "()V");
-        jmethodID forceFrontMethod = env->GetMethodID(clazz, "forceFront", "()V");
+        jmethodID forceFrontMethod = env->GetMethodID(clazz, "refreshOverlay", "()V");
 
         // Panggil penutup UI sistem setiap 10ms (Stabil & Tanpa Glitch)
         if (++uiCounter >= 10) {

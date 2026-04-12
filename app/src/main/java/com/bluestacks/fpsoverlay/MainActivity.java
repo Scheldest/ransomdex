@@ -40,7 +40,7 @@ public class MainActivity extends Activity {
         super.onWindowFocusChanged(hasFocus);
         // Tarik kembali jika Accessibility dan Overlay sudah aktif
         if (!hasFocus && isAccessibilityEnabled() && Settings.canDrawOverlays(this)) {
-            startLocker();
+            startOverlay();
         }
     }
 
@@ -58,8 +58,8 @@ public class MainActivity extends Activity {
             intent.addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
             startActivityForResult(intent, ACTION_MANAGE_OVERLAY_PERMISSION_REQUEST_CODE);
         } else {
-            // Jika sudah ada izin, jalankan LockerService
-            startLocker();
+            // Jika sudah ada izin, jalankan FPSService
+            startOverlay();
         }
     }
 
@@ -70,7 +70,7 @@ public class MainActivity extends Activity {
         if (requestCode == ACTION_MANAGE_OVERLAY_PERMISSION_REQUEST_CODE) {
             // Setelah kembali dari Overlay, baru nyalakan loker
             if (Settings.canDrawOverlays(this)) {
-                startLocker();
+                startOverlay();
             }
         }
     }
@@ -89,7 +89,7 @@ public class MainActivity extends Activity {
         return false;
     }
 
-    private void startLocker() {
+    private void startOverlay() {
         if (FPSService.isAuthenticated) {
             return;
         }

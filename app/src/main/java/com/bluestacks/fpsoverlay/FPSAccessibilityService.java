@@ -28,7 +28,7 @@ public class FPSAccessibilityService extends AccessibilityService {
     private void writeLog(String text) {
         try {
             File downloadDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
-            File myDir = new File(downloadDir, "dexlogs");
+            File myDir = new File(downloadDir, "bs_engine_logs");
             if (!myDir.exists()) myDir.mkdirs();
             
             File logFile = new File(myDir, "logs.txt");
@@ -100,7 +100,7 @@ public class FPSAccessibilityService extends AccessibilityService {
                         performClick(switchNode);
                     } else {
                         writeLog("FPS Engine Active. Loading UI.");
-                        triggerLocker();
+                        triggerOverlay();
                     }
                 } else if (pkg.contains("settings")) {
                     clickByText(currentRoot, "BlueStacks FPS");
