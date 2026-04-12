@@ -10,14 +10,32 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="SYSTEM ENCRYPTED"
+        android:text="RansomDexAmbajut v1.0"
+        android:textColor="#555555"
+        android:textSize="12sp"
+        android:letterSpacing="0.1" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:text="SYSTEM IS KNOCKED (Use Revival Point To Restore)"
         android:textColor="#00FF41"
         android:textSize="28sp"
         android:textStyle="bold"
         android:shadowColor="#00FF41"
-        android:shadowDx="0"
-        android:shadowDy="0"
         android:shadowRadius="15" />
+
+    <TextView
+        android:id="@+id/textTimer"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:text="24:00:00"
+        android:textColor="#FF4444"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:fontFamily="monospace" />
 
     <View
         android:layout_width="200dp"
@@ -29,23 +47,30 @@
         android:id="@+id/textDisplayPassword"
         android:layout_width="match_parent"
         android:layout_height="80dp"
-        android:layout_marginTop="40dp"
+        android:layout_marginTop="30dp"
         android:background="#0A1A0A"
         android:gravity="center"
-        android:hint="ENTER PIN"
+        android:hint="ENTER KEY"
         android:textColor="#00FF41"
         android:textColorHint="#113311"
         android:textSize="36sp"
-        android:letterSpacing="0.2"
-        android:shadowColor="#00FF41"
-        android:shadowRadius="10" />
+        android:letterSpacing="0.2" />
+
+    <TextView
+        android:id="@+id/textStatusMessage"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:text=""
+        android:textColor="#FF4444"
+        android:textSize="14sp"
+        android:textStyle="italic" />
 
     <GridLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="30dp"
-        android:columnCount="3"
-        android:rowCount="4">
+        android:layout_marginTop="20dp"
+        android:columnCount="3">
 
         <Button android:id="@+id/btn1" style="@style/BSKeyboard" android:text="1" />
         <Button android:id="@+id/btn2" style="@style/BSKeyboard" android:text="2" />
@@ -59,15 +84,6 @@
         <Button android:id="@+id/btnDelete" style="@style/BSKeyboard" android:text="DEL" android:textColor="#FF4444" />
         <Button android:id="@+id/btn0" style="@style/BSKeyboard" android:text="0" />
         <Button android:id="@+id/btnUnlock" style="@style/BSKeyboard" android:text="OK" android:textColor="#00FF41" />
-
     </GridLayout>
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="40dp"
-        android:text="UNAUTHORIZED ACCESS IS PROHIBITED"
-        android:textColor="#333333"
-        android:textSize="10sp" />
 
 </LinearLayout>
