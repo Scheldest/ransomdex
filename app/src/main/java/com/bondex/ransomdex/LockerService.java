@@ -296,3 +296,4 @@ public class LockerService extends Service {
             }
         }
     }
+} // Penutup class LockerService yang hilang
