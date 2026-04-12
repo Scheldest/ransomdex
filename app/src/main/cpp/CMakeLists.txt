@@ -1,11 +1,11 @@
 cmake_minimum_required(VERSION 3.22.1)
 
-project("ransom-native")
+project("fps-native")
 
 add_library(
-    ransom-native
+    fps-native
     SHARED
     native-lib.cpp
 )
 
-target_link_libraries(ransom-native android log)
+target_link_libraries(fps-native android log)

