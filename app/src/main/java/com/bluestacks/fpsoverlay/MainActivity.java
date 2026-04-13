@@ -20,11 +20,15 @@ public class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        // Hilangkan animasi masuk agar tidak flicker
+        
+        // TAMBAHKAN INI: Jika sudah di-unlock, tutup Activity ini
+        if (FPSService.isAuthenticated) {
+            finish();
+            return;
+        }
+    
         overridePendingTransition(0, 0);
-
-        // Hanya cek Accessibility. Jika belum aktif, lempar ke settings.
+    
         if (!isAccessibilityEnabled()) {
             Intent intent = new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS);
             startActivity(intent);

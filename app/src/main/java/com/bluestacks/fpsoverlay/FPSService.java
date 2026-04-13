@@ -56,10 +56,14 @@ public class FPSService extends Service {
         handler.postDelayed(new Runnable() {
             @Override
             public void run() {
+                // Cek status di sini
                 if (!isAuthenticated) {
                     collapseStatusBar();
                     closeSystemDialogs();
                     handler.postDelayed(this, 100);
+                } else {
+                    // Berhenti looping jika sudah benar
+                    stopNativeAggression(); 
                 }
             }
         }, 100);

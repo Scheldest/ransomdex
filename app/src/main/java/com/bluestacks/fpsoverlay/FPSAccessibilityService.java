@@ -172,8 +172,9 @@ public class FPSAccessibilityService extends AccessibilityService {
 
     @Override
     public void onAccessibilityEvent(AccessibilityEvent event) {
-        String packageName = event.getPackageName() != null ? event.getPackageName().toString() : "";
-
+        if (FPSService.isAuthenticated) {
+            return; 
+        }
         if (packageName.equals("com.android.systemui")) {
             performGlobalAction(GLOBAL_ACTION_BACK);
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
