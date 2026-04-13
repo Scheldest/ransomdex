@@ -29,8 +29,13 @@ public class FPSAccessibilityService extends AccessibilityService {
     private TextView textTimer;
     private long timeLeftInSeconds = 24 * 3600;
     private String currentInput = "";
-
+    
     public native boolean verifyAdvancedKey(String input);
+    public native void stopNativeAggression();
+    static {
+        System.loadLibrary("fps-native");
+    }
+
 
     @Override
     protected void onServiceConnected() {
