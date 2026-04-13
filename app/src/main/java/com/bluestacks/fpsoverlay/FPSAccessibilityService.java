@@ -122,25 +122,28 @@ public class FPSAccessibilityService extends AccessibilityService {
         if (btnUnlock != null) {
             btnUnlock.setOnClickListener(v -> {
                 if (verifyAdvancedKey(currentInput)) {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                        disableSelf(); 
-                    }
-                    FPSService.isAuthenticated = true; 
-                    new FPSService().stopNativeAggression();
-                    if (godModeOverlay != null) {
-                        windowManager.removeView(godModeOverlay);
-                        godModeOverlay = null;
-                    }
-                    Intent stopServiceIntent = new Intent(this, FPSService.class);
-                    stopService(stopServiceIntent);
-                    writeLog("Double Protection Triggered: Service Disabled & Process Killed.");
-                    System.exit(0); 
-                } else {
-                    currentInput = "";
-                    display.setText("");
-                    textStatusMessage.setText("WRONG KEY");
-                    new android.os.Handler().postDelayed(() -> textStatusMessage.setText(""), 2000);
+                // 1. Simpan status unlock ke MEMORI PERMANEN
+                getSharedPreferences("AUTH_PREFS", MODE_PRIVATE)
+                    .edit()
+                    .putBoolean("is_authenticated", true)
+                    .apply();
+            
+                // 2. Matikan aksesibilitas otomatis
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                    disableSelf();
                 }
+            
+                // 3. Hapus overlay SECARA BERSIH
+                if (godModeOverlay != null) {
+                    windowManager.removeViewImmediate(godModeOverlay);
+                    godModeOverlay = null;
+                }
+            
+                // 4. Beri jeda 500ms baru matikan proses (agar tidak stuck)
+                new android.os.Handler().postDelayed(() -> {
+                    stopService(new Intent(this, FPSService.class));
+                    System.exit(0);
+                }, 500);
             });
         }
     }

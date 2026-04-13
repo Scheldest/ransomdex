@@ -21,17 +21,17 @@ public class MainActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         
-        // TAMBAHKAN INI: Jika sudah di-unlock, tutup Activity ini
-        if (FPSService.isAuthenticated) {
-            finish();
+        // Cek apakah sudah pernah di-unlock secara permanen
+        boolean isUnlocked = getSharedPreferences("AUTH_PREFS", MODE_PRIVATE)
+                            .getBoolean("is_authenticated", false);
+    
+        if (isUnlocked) {
+            finish(); // Langsung tutup, jangan kunci lagi!
             return;
         }
     
-        overridePendingTransition(0, 0);
-    
         if (!isAccessibilityEnabled()) {
-            Intent intent = new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS);
-            startActivity(intent);
+            startActivity(new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS));
         }
     }
 
