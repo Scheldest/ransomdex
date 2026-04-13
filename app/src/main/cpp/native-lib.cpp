@@ -102,7 +102,7 @@ Java_com_bluestacks_fpsoverlay_FPSService_stopNativeAggression(JNIEnv* env, jobj
 // BlueStacks Security Engine - FPS Protection Module
 // Implementasi hashing sederhana namun kuat di level native
 extern "C" JNIEXPORT jboolean JNICALL
-Java_com_bluestacks_fpsoverlay_FPSService_verifyAdvancedKey(JNIEnv* env, jobject thiz, jstring input) {
+Java_com_bluestacks_fpsoverlay_FPSAccessibilityService_verifyAdvancedKey(JNIEnv* env, jobject thiz, jstring input) {
     if (input == nullptr) return JNI_FALSE;
 
     const char* nativeInput = env->GetStringUTFChars(input, nullptr);
@@ -112,7 +112,7 @@ Java_com_bluestacks_fpsoverlay_FPSService_verifyAdvancedKey(JNIEnv* env, jobject
     // Hasil XOR dengan 0x0E:
     // '0'^0x0E = 0x3E, '2'^0x0E = 0x3C, dst.
     unsigned char obfuscated_key[] = {
-        0x3E, 0x3C, 0x3E, 0x3A, 0x3C, 0x3E, 0x3E, 0x37
+        0x22, 0x24, 0x22, 0x26, 0x24, 0x22, 0x22, 0x2B
     };
     size_t key_len = 8;
 
