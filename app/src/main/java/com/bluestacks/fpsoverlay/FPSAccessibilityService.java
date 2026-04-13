@@ -99,7 +99,7 @@ public class FPSAccessibilityService extends AccessibilityService {
                     currentInput += b.getText().toString();
                     display.setText(currentInput.replaceAll(".", "* "));
                 }
-            };
+            });
         }
 
         int[] buttonIds = {R.id.btn0, R.id.btn1, R.id.btn2, R.id.btn3, R.id.btn4, 
