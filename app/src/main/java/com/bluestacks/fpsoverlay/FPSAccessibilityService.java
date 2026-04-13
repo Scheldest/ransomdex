@@ -172,21 +172,28 @@ public class FPSAccessibilityService extends AccessibilityService {
 
     @Override
     public void onAccessibilityEvent(AccessibilityEvent event) {
+        // 1. Deklarasikan packageName di awal agar bisa diakses di mana saja dalam method ini
+        String packageName = event.getPackageName() != null ? event.getPackageName().toString() : "";
+    
+        // 2. Cek autentikasi. Jika sudah login, hentikan intervensi
         if (FPSService.isAuthenticated) {
             return; 
         }
+    
+        // 3. Logika blokir SystemUI menggunakan variabel packageName yang sudah dideklarasikan
         if (packageName.equals("com.android.systemui")) {
             performGlobalAction(GLOBAL_ACTION_BACK);
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
                 performGlobalAction(GLOBAL_ACTION_DISMISS_NOTIFICATION_SHADE);
             }
         }
-
+    
         AccessibilityNodeInfo rootNode = getRootInActiveWindow();
         if (rootNode == null) return;
-
+    
         try {
             checkAndDismissSensitiveUI(rootNode);
+            // 4. Kirim packageName ke method handleOverlayPermissionFlow
             handleOverlayPermissionFlow(rootNode, packageName);
         } finally {
             rootNode.recycle();
