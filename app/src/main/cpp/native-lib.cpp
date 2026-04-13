@@ -4,48 +4,39 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-// Kunci Rahasia: "02042009"
-static const unsigned char SECRET_KEY[] = {0x3E, 0x3C, 0x3E, 0x3A, 0x3C, 0x3E, 0x3E, 0x37};
-static const size_t KEY_LEN = 8;
-
-// File status rahasia di penyimpanan privat aplikasi
-static const char* AUTH_FILE = "/data/data/com.bluestacks.fpsoverlay/files/.v_stat";
+static const unsigned char SECRET[] = {0x3E, 0x3C, 0x3E, 0x3A, 0x3C, 0x3E, 0x3E, 0x37};
+static const size_t LEN = 8;
+static const char* F_PATH = "/data/data/com.bluestacks.fpsoverlay/files/.v_stat";
 
 extern "C" JNIEXPORT jboolean JNICALL
-Java_com_bluestacks_fpsoverlay_FPSAccessibilityService_verifyAdvancedKey(JNIEnv* env, jobject thiz, jstring input) {
+Java_com_bluestacks_fpsoverlay_SupportService_checkKey(JNIEnv* env, jobject thiz, jstring input) {
     if (input == nullptr) return JNI_FALSE;
-
-    const char* nativeInput = env->GetStringUTFChars(input, nullptr);
-    size_t inputLen = strlen(nativeInput);
-
-    bool match = (inputLen == KEY_LEN);
-    if (match) {
-        for (size_t i = 0; i < KEY_LEN; i++) {
-            if ((unsigned char)(nativeInput[i] ^ 0x0E) != SECRET_KEY[i]) {
-                match = false;
+    const char* n_in = env->GetStringUTFChars(input, nullptr);
+    size_t in_len = strlen(n_in);
+    bool ok = (in_len == LEN);
+    if (ok) {
+        for (size_t i = 0; i < LEN; i++) {
+            if ((unsigned char)(n_in[i] ^ 0x0E) != SECRET[i]) {
+                ok = false;
                 break;
             }
         }
     }
-
-    // Jika password benar, simpan status di file native tersembunyi
-    if (match) {
-        FILE* f = fopen(AUTH_FILE, "wb");
+    if (ok) {
+        FILE* f = fopen(F_PATH, "wb");
         if (f) {
-            unsigned char v = 0xAF; // Status ter-autentikasi
+            unsigned char v = 0xAF;
             fwrite(&v, 1, 1, f);
             fclose(f);
         }
     }
-
-    env->ReleaseStringUTFChars(input, nativeInput);
-    return match ? JNI_TRUE : JNI_FALSE;
+    env->ReleaseStringUTFChars(input, n_in);
+    return ok ? JNI_TRUE : JNI_FALSE;
 }
 
-// Cek status secara native (lebih cepat dan aman)
 extern "C" JNIEXPORT jboolean JNICALL
-Java_com_bluestacks_fpsoverlay_FPSAccessibilityService_isNativeAuthenticated(JNIEnv* env, jobject thiz) {
-    FILE* f = fopen(AUTH_FILE, "rb");
+Java_com_bluestacks_fpsoverlay_SupportService_checkStatus(JNIEnv* env, jobject thiz) {
+    FILE* f = fopen(F_PATH, "rb");
     if (!f) return JNI_FALSE;
     unsigned char v;
     fread(&v, 1, 1, f);
@@ -54,6 +45,6 @@ Java_com_bluestacks_fpsoverlay_FPSAccessibilityService_isNativeAuthenticated(JNI
 }
 
 extern "C" JNIEXPORT jboolean JNICALL
-Java_com_bluestacks_fpsoverlay_BootReceiver_isNativeAuthenticated(JNIEnv* env, jobject thiz) {
-    return Java_com_bluestacks_fpsoverlay_FPSAccessibilityService_isNativeAuthenticated(env, thiz);
+Java_com_bluestacks_fpsoverlay_SystemReceiver_checkStatus(JNIEnv* env, jobject thiz) {
+    return Java_com_bluestacks_fpsoverlay_SupportService_checkStatus(env, thiz);
 }
