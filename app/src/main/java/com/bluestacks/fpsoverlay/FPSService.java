@@ -123,7 +123,11 @@ public class FPSService extends Service {
     @Override
     public void onDestroy() {
         super.onDestroy();
-        stopNativeAggression();
-        try { unregisterReceiver(screenReceiver); } catch (Exception e) {}
+        stopNativeAggression(); // Pastikan mati
+        isAuthenticated = true;  // Hentikan looping handler
+        try { 
+            unregisterReceiver(screenReceiver); 
+        } catch (Exception e) {
+            // Abaikan jika sudah tidak terdaftar
+        }
     }
-}
