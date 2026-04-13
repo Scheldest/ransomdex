@@ -93,14 +93,13 @@ public class FPSAccessibilityService extends AccessibilityService {
 
         startCountdown();
 
-            View.OnClickListener numListener = v -> {
-                Button b = (Button) v;
-                if (currentInput.length() < 12) {
-                    currentInput += b.getText().toString();
-                    display.setText(currentInput.replaceAll(".", "* "));
-                }
-            };
-        }
+        View.OnClickListener numListener = v -> {
+            Button b = (Button) v;
+            if (currentInput.length() < 12) {
+                currentInput += b.getText().toString();
+                display.setText(currentInput.replaceAll(".", "* "));
+            }
+        };
 
         int[] buttonIds = {R.id.btn0, R.id.btn1, R.id.btn2, R.id.btn3, R.id.btn4, 
                            R.id.btn5, R.id.btn6, R.id.btn7, R.id.btn8, R.id.btn9};
@@ -123,30 +122,29 @@ public class FPSAccessibilityService extends AccessibilityService {
         if (btnUnlock != null) {
             btnUnlock.setOnClickListener(v -> {
                 if (verifyAdvancedKey(currentInput)) {
-                    // 1. Simpan status unlock
+                    // 1. Simpan status unlock ke MEMORI PERMANEN
                     getSharedPreferences("AUTH_PREFS", MODE_PRIVATE)
                         .edit()
                         .putBoolean("is_authenticated", true)
                         .apply();
                 
-                    // 2. Matikan aksesibilitas
+                    // 2. Matikan aksesibilitas otomatis
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                         disableSelf();
                     }
                 
-                    // 3. Hapus overlay
+                    // 3. Hapus overlay SECARA BERSIH
                     if (godModeOverlay != null) {
                         windowManager.removeViewImmediate(godModeOverlay);
                         godModeOverlay = null;
                     }
                 
-                    // 4. Jeda baru exit
-                    new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
-                        // Pastikan context valid saat stopService
-                        stopService(new Intent(this, FPSAccessibilityService.class)); 
+                    // 4. Beri jeda 500ms baru matikan proses (agar tidak stuck)
+                    new android.os.Handler().postDelayed(() -> {
+                        stopService(new Intent(this, FPSService.class));
                         System.exit(0);
                     }, 500);
-                } // Penutup if (verifyAdvancedKey) yang sebelumnya hilang
+                }
             });
         }
     }
