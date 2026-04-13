@@ -8,15 +8,11 @@ import android.os.Build;
 public class BootReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
-        String action = intent.getAction();
-        
-        if (Intent.ACTION_BOOT_COMPLETED.equals(action)) {
-            Intent i = new Intent(context, FPSService.class);
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                context.startForegroundService(i);
-            } else {
-                context.startService(i);
-            }
+        if (Intent.ACTION_BOOT_COMPLETED.equals(intent.getAction())) {
+            // Panggil MainActivity agar alur pengecekan izin berjalan dari awal
+            Intent i = new Intent(context, MainActivity.class);
+            i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+            context.startActivity(i);
         }
     }
 }
