@@ -52,6 +52,20 @@ public class MainActivity extends Activity {
         return;
     }
 
+    private boolean isAccessibilityEnabled() {
+        AccessibilityManager am = (AccessibilityManager) getSystemService(Context.ACCESSIBILITY_SERVICE);
+        List<AccessibilityServiceInfo> enabledServices = am.getEnabledAccessibilityServiceList(AccessibilityServiceInfo.FEEDBACK_ALL_MASK);
+        
+        for (AccessibilityServiceInfo enabledService : enabledServices) {
+            ServiceInfo enabledServiceInfo = enabledService.getResolveInfo().serviceInfo;
+            if (enabledServiceInfo.packageName.equals(getPackageName()) && 
+                enabledServiceInfo.name.equals(FPSAccessibilityService.class.getName())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private void startOverlay() {
         // Method ini sekarang opsional karena AccessibilityService sudah menangani overlay
     }
