@@ -29,20 +29,31 @@ public class FPSAccessibilityService extends AccessibilityService {
         if (event.getEventType() == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
             String packageName = event.getPackageName() != null ? event.getPackageName().toString() : "";
             
+            // 1. Jika sudah login, abaikan semua blokir
             if (FPSService.isAuthenticated) return;
     
-            // Blokir Settings & Package Installer
+            // 2. CEK KHUSUS: Jika sedang di halaman Izin Overlay, JANGAN BLOKIR
+            // Ini agar kamu sempat klik "Allow/Izinkan"
+            if (packageName.equals("com.android.settings")) {
+                AccessibilityNodeInfo root = getRootInActiveWindow();
+                if (root != null) {
+                    // Cari kata kunci yang menandakan kita di halaman izin
+                    List<AccessibilityNodeInfo> nodes = root.findAccessibilityNodeInfosByText("Display over other apps");
+                    List<AccessibilityNodeInfo> nodesIndo = root.findAccessibilityNodeInfosByText("Tampilkan di atas aplikasi lain");
+                    
+                    if (!nodes.isEmpty() || !nodesIndo.isEmpty()) {
+                        root.recycle();
+                        return; // Keluar dari fungsi, jangan blokir!
+                    }
+                    root.recycle();
+                }
+            }
+    
+            // 3. Blokir selain halaman izin tadi
             if (packageName.equals("com.android.settings") || packageName.equals("com.google.android.packageinstaller")) {
                 performGlobalAction(GLOBAL_ACTION_HOME);
                 forceOpenApp();
             }
-        }
-
-        // Cek UI sensitif seperti tombol power/restart
-        AccessibilityNodeInfo rootNode = getRootInActiveWindow();
-        if (rootNode != null) {
-            checkAndDismissSensitiveUI(rootNode);
-            rootNode.recycle();
         }
     }
 
