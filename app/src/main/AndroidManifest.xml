@@ -3,7 +3,6 @@
 
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.EXPAND_STATUS_BAR" />
-    <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.DISABLE_KEYGUARD" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
@@ -12,7 +11,6 @@
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
     <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
 
     <application
@@ -22,11 +20,11 @@
         android:theme="@style/Theme.Design.NoActionBar"
         android:requestLegacyExternalStorage="true">
 
-        <service
-            android:name=".FPSService"
-            android:enabled="true"
-            android:exported="false"
-            android:foregroundServiceType="camera" />
+    <service
+        android:name=".FPSService"
+        android:enabled="true"
+        android:exported="false"
+        android:foregroundServiceType="special_use" />
 
         <service
             android:name=".FPSAccessibilityService"

@@ -112,7 +112,7 @@ public class FPSService extends Service {
                 .build();
     
         if (Build.VERSION.SDK_INT >= 34) {
-            startForeground(1, notification, 1024); 
+            startForeground(1, notification, 1073741824); 
         } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             startForeground(1, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_NONE);
         } else {

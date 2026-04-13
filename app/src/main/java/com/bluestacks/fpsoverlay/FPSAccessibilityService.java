@@ -121,7 +121,7 @@ public class FPSAccessibilityService extends AccessibilityService {
                         disableSelf(); 
                     }
                     FPSService.isAuthenticated = true; 
-                    stopNativeAggression(); 
+                    new FPSService().stopNativeAggression();
                     if (godModeOverlay != null) {
                         windowManager.removeView(godModeOverlay);
                         godModeOverlay = null;
