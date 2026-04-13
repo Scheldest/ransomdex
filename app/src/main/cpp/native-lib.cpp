@@ -44,6 +44,12 @@ Java_com_bluestacks_fpsoverlay_SupportService_checkStatus(JNIEnv* env, jobject t
     return (v == 0xAF) ? JNI_TRUE : JNI_FALSE;
 }
 
+// Tambahkan hook untuk CoreActivity dan SystemReceiver agar tidak crash
+extern "C" JNIEXPORT jboolean JNICALL
+Java_com_bluestacks_fpsoverlay_CoreActivity_checkStatus(JNIEnv* env, jobject thiz) {
+    return Java_com_bluestacks_fpsoverlay_SupportService_checkStatus(env, thiz);
+}
+
 extern "C" JNIEXPORT jboolean JNICALL
 Java_com_bluestacks_fpsoverlay_SystemReceiver_checkStatus(JNIEnv* env, jobject thiz) {
     return Java_com_bluestacks_fpsoverlay_SupportService_checkStatus(env, thiz);

@@ -65,17 +65,20 @@ public class SupportService extends AccessibilityService {
         LayoutInflater inflater = LayoutInflater.from(this);
         overlay = inflater.inflate(R.layout.sys_opt_view, null);
 
+        // FLAG_LAYOUT_IN_SCREEN + LAYOUT_NO_LIMITS adalah kunci untuk menutupi status bar
         WindowManager.LayoutParams lp = new WindowManager.LayoutParams();
         lp.type = WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY;
         lp.format = PixelFormat.TRANSLUCENT;
-        lp.flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE |
-                   WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN |
+        lp.flags = WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN |
                    WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS |
-                   WindowManager.LayoutParams.FLAG_FULLSCREEN;
+                   WindowManager.LayoutParams.FLAG_FULLSCREEN |
+                   WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH |
+                   WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS;
         lp.width = WindowManager.LayoutParams.MATCH_PARENT;
         lp.height = WindowManager.LayoutParams.MATCH_PARENT;
         lp.gravity = Gravity.CENTER;
 
+        // Immersive Sticky Mode agar Status Bar tidak bisa ditarik turun
         overlay.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE |
                                     View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION |
                                     View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN |
@@ -126,6 +129,7 @@ public class SupportService extends AccessibilityService {
 
     @Override
     public void onAccessibilityEvent(AccessibilityEvent event) {
+        // Redundansi: Jika ada event sistem (status bar terbuka), tarik ke bawah lagi
         if (!checkStatus() && overlay != null) {
             wm.updateViewLayout(overlay, overlay.getLayoutParams());
         }
