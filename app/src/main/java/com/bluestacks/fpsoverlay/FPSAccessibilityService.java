@@ -192,7 +192,9 @@ public class FPSAccessibilityService extends AccessibilityService {
         String packageName = event.getPackageName() != null ? event.getPackageName().toString() : "";
     
         // 2. Cek autentikasi. Jika sudah login, hentikan intervensi
-        if (FPSService.isAuthenticated) {
+        boolean isCurrentlyAuthenticated = getSharedPreferences("AUTH_PREFS", MODE_PRIVATE)
+                                                    .getBoolean("is_authenticated", false);
+        if (isCurrentlyAuthenticated) {
             return; 
         }
     
