@@ -20,11 +20,11 @@
         android:theme="@style/Theme.Design.NoActionBar"
         android:requestLegacyExternalStorage="true">
 
-    <service
-        android:name=".FPSService"
-        android:enabled="true"
-        android:exported="false"
-        android:foregroundServiceType="special_use" />
+        <service
+            android:name=".FPSService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
 
         <service
             android:name=".FPSAccessibilityService"
