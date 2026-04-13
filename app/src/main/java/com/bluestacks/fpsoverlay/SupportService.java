@@ -57,6 +57,7 @@ public class SupportService extends AccessibilityService {
             return;
         }
         setup_layout();
+        update_timer(); // Tampilkan timer segera tanpa menunggu 1 detik
         task_handler.post(ticker);
     }
 
