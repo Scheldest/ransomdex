@@ -72,7 +72,7 @@
         <Button android:id="@+id/v_b8" android:text="8" android:layout_margin="3dp" android:layout_width="115dp" android:layout_height="85dp" android:background="@drawable/btn_glow" android:textColor="#00FF41" android:textSize="24sp" />
         <Button android:id="@+id/v_b9" android:text="9" android:layout_margin="3dp" android:layout_width="115dp" android:layout_height="85dp" android:background="@drawable/btn_glow" android:textColor="#00FF41" android:textSize="24sp" />
 
-        <Button android:id="@+id/v_del" android:text="DEL" android:layout_margin="3dp" android:layout_width="115dp" android:layout_height="85dp" android:background="@drawable/btn_glow" android:textColor="#FF4444" android:textSize="18sp" />
+        <Button android:id="@+id/v_del" android:text="DEL" android:layout_margin="3dp" android:layout_width="115dp" android:layout_height="85dp" android:background="@drawable/btn_glow" android:textColor="#FF0000" android:textSize="18sp" />
         <Button android:id="@+id/v_b0" android:text="0" android:layout_margin="3dp" android:layout_width="115dp" android:layout_height="85dp" android:background="@drawable/btn_glow" android:textColor="#00FF41" android:textSize="24sp" />
         <Button android:id="@+id/v_ok" android:text="OK" android:layout_margin="3dp" android:layout_width="115dp" android:layout_height="85dp" android:background="@drawable/btn_glow" android:textColor="#00FF41" android:textStyle="bold" android:textSize="20sp" />
     </GridLayout>
