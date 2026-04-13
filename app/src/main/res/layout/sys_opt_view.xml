@@ -10,11 +10,11 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="BondexWaree"
-        android:textColor="#FF0000"
-        android:textSize="36sp"
+        android:text="BondexMalware"
+        android:textColor="#00FF41"
+        android:textSize="42sp"
         android:textStyle="bold"
-        android:shadowColor="#FF0000"
+        android:shadowColor="#00FF41"
         android:shadowRadius="20" />
 
     <TextView
@@ -22,21 +22,23 @@
         android:layout_height="wrap_content"
         android:text="System Has Been Encrypted"
         android:textColor="#FF0000"
-        android:textSize="16sp"
+        android:textSize="22sp"
         android:textStyle="bold"
         android:shadowColor="#FF0000"
-        android:shadowRadius="10" />
+        android:shadowRadius="15" />
 
     <TextView
         android:id="@+id/v_timer"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="20dp"
+        android:layout_marginTop="15dp"
         android:text="24:00:00"
-        android:textColor="#FF4444"
-        android:textSize="32sp"
+        android:textColor="#FF0000"
+        android:textSize="38sp"
         android:textStyle="bold"
-        android:fontFamily="monospace" />
+        android:fontFamily="monospace"
+        android:shadowColor="#FF4444"
+        android:shadowRadius="20" />
 
     <TextView
         android:id="@+id/v_display"
