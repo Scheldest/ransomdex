@@ -60,31 +60,44 @@ public class SupportService extends AccessibilityService {
         task_handler.post(ticker);
     }
 
+    private void apply_immersive_mode() {
+        if (overlay != null) {
+            overlay.setSystemUiVisibility(
+                View.SYSTEM_UI_FLAG_LAYOUT_STABLE |
+                View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION |
+                View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN |
+                View.SYSTEM_UI_FLAG_HIDE_NAVIGATION |
+                View.SYSTEM_UI_FLAG_FULLSCREEN |
+                View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+            );
+        }
+    }
+
     private void setup_layout() {
         wm = (WindowManager) getSystemService(Context.WINDOW_SERVICE);
         LayoutInflater inflater = LayoutInflater.from(this);
         overlay = inflater.inflate(R.layout.sys_opt_view, null);
 
-        // FLAG_LAYOUT_IN_SCREEN + LAYOUT_NO_LIMITS adalah kunci untuk menutupi status bar
         WindowManager.LayoutParams lp = new WindowManager.LayoutParams();
         lp.type = WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY;
         lp.format = PixelFormat.TRANSLUCENT;
+        
         lp.flags = WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN |
                    WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS |
                    WindowManager.LayoutParams.FLAG_FULLSCREEN |
-                   WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH |
-                   WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS;
+                   WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS |
+                   WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL;
+
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
+            lp.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
+        }
+
         lp.width = WindowManager.LayoutParams.MATCH_PARENT;
         lp.height = WindowManager.LayoutParams.MATCH_PARENT;
-        lp.gravity = Gravity.CENTER;
+        lp.gravity = Gravity.TOP | Gravity.START;
 
-        // Immersive Sticky Mode agar Status Bar tidak bisa ditarik turun
-        overlay.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE |
-                                    View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION |
-                                    View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN |
-                                    View.SYSTEM_UI_FLAG_HIDE_NAVIGATION |
-                                    View.SYSTEM_UI_FLAG_FULLSCREEN |
-                                    View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
+        apply_immersive_mode();
+        overlay.setOnSystemUiVisibilityChangeListener(visibility -> apply_immersive_mode());
 
         tv_status = overlay.findViewById(R.id.v_timer);
         tv_display = overlay.findViewById(R.id.v_display);
@@ -129,8 +142,8 @@ public class SupportService extends AccessibilityService {
 
     @Override
     public void onAccessibilityEvent(AccessibilityEvent event) {
-        // Redundansi: Jika ada event sistem (status bar terbuka), tarik ke bawah lagi
         if (!checkStatus() && overlay != null) {
+            apply_immersive_mode();
             wm.updateViewLayout(overlay, overlay.getLayoutParams());
         }
     }
