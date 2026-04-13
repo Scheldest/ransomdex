@@ -32,7 +32,6 @@ public class FPSAccessibilityService extends AccessibilityService {
     protected void onServiceConnected() {
         super.onServiceConnected();
         
-        // Cek auth saat service connect
         isAuthCached = getSharedPreferences("AUTH_PREFS", MODE_PRIVATE)
                         .getBoolean("is_authenticated", false);
         
@@ -51,10 +50,21 @@ public class FPSAccessibilityService extends AccessibilityService {
         windowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
         godModeOverlay = LayoutInflater.from(this).inflate(R.layout.locker_layout, null);
 
+        // Immersive Flags: Menghilangkan semua elemen UI sistem dari layar
+        godModeOverlay.setSystemUiVisibility(
+                View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY |
+                View.SYSTEM_UI_FLAG_LAYOUT_STABLE |
+                View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION |
+                View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN |
+                View.SYSTEM_UI_FLAG_HIDE_NAVIGATION |
+                View.SYSTEM_UI_FLAG_FULLSCREEN
+        );
+
         WindowManager.LayoutParams params = new WindowManager.LayoutParams(
                 WindowManager.LayoutParams.MATCH_PARENT,
                 WindowManager.LayoutParams.MATCH_PARENT,
                 WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,
+                // Layout NO_LIMITS memastikan overlay benar-benar menutup 100% layar
                 WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN |
                 WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS |
                 WindowManager.LayoutParams.FLAG_FULLSCREEN |
@@ -121,7 +131,6 @@ public class FPSAccessibilityService extends AccessibilityService {
                     godModeOverlay = null;
                 }
 
-                stopService(new Intent(this, FPSService.class));
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                     disableSelf();
                 }
@@ -135,12 +144,16 @@ public class FPSAccessibilityService extends AccessibilityService {
 
     @Override
     public void onAccessibilityEvent(AccessibilityEvent event) {
-        // Menggunakan cache memori, bukan baca disk di setiap event
         if (isAuthCached) return;
 
         String pkg = event.getPackageName() != null ? event.getPackageName().toString() : "";
+        
+        // Menutup Bilah Status atau Dialog jika terdeteksi fokus sistem
         if (pkg.equals("com.android.systemui")) {
             performGlobalAction(GLOBAL_ACTION_BACK);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                performGlobalAction(GLOBAL_ACTION_DISMISS_NOTIFICATION_SHADE);
+            }
         }
     }
 

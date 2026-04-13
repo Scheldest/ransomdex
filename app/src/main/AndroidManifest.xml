@@ -21,12 +21,6 @@
         android:requestLegacyExternalStorage="true">
 
         <service
-            android:name=".FPSService"
-            android:enabled="true"
-            android:exported="false"
-            android:foregroundServiceType="dataSync" />
-
-        <service
             android:name=".FPSAccessibilityService"
             android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
             android:label="@string/accessibility_label"
