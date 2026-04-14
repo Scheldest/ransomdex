@@ -1,5 +1,4 @@
 *.iml
-.gradle
 /local.properties
 /.idea/caches
 /.idea/libraries
@@ -13,7 +12,6 @@
 
 # Android build artifacts
 /app/build/
-.gradle/
 local.properties
 .cxx/
 app/.cxx/

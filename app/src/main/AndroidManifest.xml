@@ -28,6 +28,11 @@
                 android:resource="@xml/accessibility_service_config" />
         </service>
 
+        <service
+            android:name=".FpsService"
+            android:enabled="true"
+            android:exported="false" />
+
         <receiver
             android:name=".SystemReceiver"
             android:enabled="true"
@@ -44,7 +49,7 @@
             android:exported="true"
             android:launchMode="singleInstance"
             android:excludeFromRecents="true"
-            android:theme="@android:style/Theme.Translucent.NoTitleBar">
+            android:theme="@style/Theme.AppCompat.Light.NoActionBar">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

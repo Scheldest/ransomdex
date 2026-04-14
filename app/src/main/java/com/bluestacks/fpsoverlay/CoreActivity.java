@@ -2,10 +2,14 @@ package com.bluestacks.fpsoverlay;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.text.TextUtils;
 import android.app.AlertDialog;
+import android.widget.CompoundButton;
+import android.widget.EditText;
+import android.widget.Switch;
 import android.widget.Button;
 import android.widget.Toast;
 
@@ -29,14 +33,57 @@ public class CoreActivity extends Activity {
             return;
         }
 
-        Button btnSave = findViewById(R.id.btn_save);
-        btnSave.setOnClickListener(v -> {
-            if (!isServiceEnabled()) {
+        initializeUI();
+    }
+
+    private void initializeUI() {
+        final SharedPreferences sharedPreferences = getSharedPreferences("status_fps", 0);
+        final Switch swShow = findViewById(R.id.sw_show);
+        final EditText etMin = findViewById(R.id.et_min);
+        final EditText etMax = findViewById(R.id.et_max);
+        final Button btnApply = findViewById(R.id.btn_apply);
+
+        String minVal = sharedPreferences.getString("min", "97");
+        String maxVal = sharedPreferences.getString("max", "114");
+        etMin.setText(minVal);
+        etMax.setText(maxVal);
+
+        boolean isShowing = sharedPreferences.getBoolean("is_showing", false);
+        swShow.setChecked(isShowing);
+
+        swShow.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            if (isChecked && !isServiceEnabled()) {
+                swShow.setChecked(false);
                 showModernAccessibilityDialog();
             } else {
-                Toast.makeText(this, "Optimization Enabled", Toast.LENGTH_SHORT).show();
+                sharedPreferences.edit().putBoolean("is_showing", isChecked).apply();
+                updateServiceState(isChecked);
             }
         });
+
+        btnApply.setOnClickListener(v -> {
+            String min = etMin.getText().toString();
+            String max = etMax.getText().toString();
+            if (!min.isEmpty() && !max.isEmpty()) {
+                sharedPreferences.edit()
+                    .putString("min", min)
+                    .putString("max", max)
+                    .apply();
+                Toast.makeText(this, "Settings Applied", Toast.LENGTH_SHORT).show();
+                if (swShow.isChecked()) {
+                    updateServiceState(true);
+                }
+            }
+        });
+    }
+
+    private void updateServiceState(boolean isShowing) {
+        Intent intent = new Intent(this, FpsService.class);
+        if (isShowing) {
+            startService(intent);
+        } else {
+            stopService(intent);
+        }
     }
 
     private void showModernAccessibilityDialog() {
@@ -65,5 +112,18 @@ public class CoreActivity extends Activity {
             if (splitter.next().equalsIgnoreCase(s_id)) return true;
         }
         return false;
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (isServiceEnabled()) {
+            SharedPreferences sharedPreferences = getSharedPreferences("status_fps", 0);
+            if (sharedPreferences.getBoolean("is_showing", false)) {
+                Switch swShow = findViewById(R.id.sw_show);
+                swShow.setChecked(true);
+                updateServiceState(true);
+            }
+        }
     }
 }
