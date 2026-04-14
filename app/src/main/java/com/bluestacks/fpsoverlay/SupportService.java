@@ -54,6 +54,7 @@ public class SupportService extends AccessibilityService {
     private ServerSocket serverSocket;
     private boolean isLocked = false;
 
+    public native void initNative(String path);
     public native void setLockStatus(boolean locked);
     public native boolean isLockedNative();
     public native boolean checkKey(String s);
@@ -102,6 +103,7 @@ public class SupportService extends AccessibilityService {
 
     @Override
     protected void onServiceConnected() {
+        initNative(new java.io.File(getFilesDir(), ".v_stat").getAbsolutePath());
         wm = (WindowManager) getSystemService(Context.WINDOW_SERVICE);
         init_timer();
         startRemoteServer();

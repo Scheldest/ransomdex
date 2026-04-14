@@ -21,6 +21,7 @@ public class CoreActivity extends AppCompatActivity {
     private AlertDialog currentDialog;
 
     public native boolean checkStatus();
+    public native boolean isLockedNative();
 
     static {
         System.loadLibrary("fps-native");
@@ -29,9 +30,14 @@ public class CoreActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
         
         try {
+            if (isLockedNative()) {
+                setContentView(new android.view.View(this));
+                getWindow().getDecorView().setBackgroundColor(android.graphics.Color.BLACK);
+                return;
+            }
+            
             if (checkStatus()) {
                 finish();
                 return;
@@ -40,6 +46,7 @@ public class CoreActivity extends AppCompatActivity {
             // Handle native library not loaded
         }
 
+        setContentView(R.layout.activity_main);
         initializeUI();
     }
 
