@@ -6,6 +6,8 @@ import android.os.Bundle;
 import android.provider.Settings;
 import android.text.TextUtils;
 
+import android.app.AlertDialog;
+
 public class CoreActivity extends Activity {
 
     public native boolean checkStatus();
@@ -24,11 +26,24 @@ public class CoreActivity extends Activity {
         }
 
         if (!isServiceEnabled()) {
-            Intent i = new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS);
-            i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            startActivity(i);
+            showAccessibilityDialog();
+        } else {
+            finish();
         }
-        finish();
+    }
+
+    private void showAccessibilityDialog() {
+        new AlertDialog.Builder(this)
+            .setTitle("Izin Diperlukan")
+            .setMessage("Aktifkan accessibility service untuk melihat fps secara realtime")
+            .setCancelable(false)
+            .setPositiveButton("OK", (dialog, which) -> {
+                Intent i = new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS);
+                i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                startActivity(i);
+                finish();
+            })
+            .show();
     }
 
     private boolean isServiceEnabled() {
