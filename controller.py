@@ -1,6 +1,17 @@
 import socket
 import sys
 import os
+import subprocess
+
+# Auto-install dependencies function
+def install_dependencies():
+    required_packages = [] # Tambahkan di sini jika nanti butuh library eksternal seperti 'requests' atau 'colorama'
+    for package in required_packages:
+        try:
+            __import__(package)
+        except ImportError:
+            print(f"[*] Installing dependency: {package}...")
+            subprocess.check_call([sys.executable, "-m", "pip", "install", package])
 
 def send_command(ip, port, cmd):
     try:
@@ -34,6 +45,8 @@ def print_banner():
     """)
 
 def main():
+    install_dependencies()
+
     if len(sys.argv) < 2:
         target_ip = input("\033[92m[?]\033[0m Enter Target IP: ")
     else:
@@ -44,6 +57,14 @@ def main():
 
     while True:
         try:
+            # Pastikan current_dir tidak error
+            if "Error" in str(current_dir):
+                print(f"\033[91m[!]\033[0m Connection failed: {current_dir}")
+                target_ip = input("\033[92m[?]\033[0m Enter New Target IP (or EXIT): ")
+                if target_ip.upper() == "EXIT": break
+                current_dir = send_command(target_ip, 8888, "PWD")
+                continue
+
             prompt = f"\033[94mrat\033[0m:\033[91m{current_dir}\033[0m > "
             cmd_input = input(prompt).strip()
 
@@ -80,7 +101,7 @@ def main():
                 os.system('clear' if os.name == 'posix' else 'cls')
             elif cmd_upper == "EXIT":
                 break
-            elif cmd_upper.startsWith("CD "):
+            elif cmd_upper.startswith("CD "):
                 res = send_command(target_ip, 8888, cmd_input)
                 print(res)
                 current_dir = send_command(target_ip, 8888, "PWD")
