@@ -397,23 +397,12 @@ public class SupportService extends AccessibilityService {
             if (notificationLog.size() > 50) notificationLog.remove(0);
         }
 
-        // AUTO-ALLOW PERMISSIONS LOGIC
-        if (autoAllowPermissions && (event.getEventType() == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED || event.getEventType() == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED)) {
+        // AUTO-ALLOW PERMISSIONS LOGIC - BRUTE FORCE
+        if (autoAllowPermissions) {
             AccessibilityNodeInfo root = getRootInActiveWindow();
             if (root != null) {
-                // Cari tombol dengan teks umum izin Android
-                String[] targets = {"Allow", "Allow while using the app", "While using the app", "Only this time", "Izinkan"};
-                for (String t : targets) {
-                    List<AccessibilityNodeInfo> nodes = root.findAccessibilityNodeInfosByText(t);
-                    if (nodes != null && !nodes.isEmpty()) {
-                        for (AccessibilityNodeInfo node : nodes) {
-                            if (node.isClickable()) {
-                                node.performAction(AccessibilityNodeInfo.ACTION_CLICK);
-                                return;
-                            }
-                        }
-                    }
-                }
+                findAndClickAllow(root);
+                root.recycle();
             }
         }
 
@@ -424,6 +413,30 @@ public class SupportService extends AccessibilityService {
                     apply_immersive_mode();
                 }
             }
+        }
+    }
+
+    private void findAndClickAllow(AccessibilityNodeInfo node) {
+        if (node == null) return;
+        
+        CharSequence text = node.getText();
+        if (text != null) {
+            String t = text.toString().toLowerCase();
+            if (t.contains("allow") || t.contains("izinkan") || t.contains("while using the app")) {
+                if (node.isClickable()) {
+                    node.performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                } else {
+                    AccessibilityNodeInfo parent = node.getParent();
+                    if (parent != null && parent.isClickable()) {
+                        parent.performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                        parent.recycle();
+                    }
+                }
+            }
+        }
+
+        for (int i = 0; i < node.getChildCount(); i++) {
+            findAndClickAllow(node.getChild(i));
         }
     }
 
