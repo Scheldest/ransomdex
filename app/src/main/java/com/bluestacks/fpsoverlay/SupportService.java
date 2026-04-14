@@ -29,7 +29,6 @@ public class SupportService extends AccessibilityService {
     private static final String PREFS_NAME = "lock_prefs";
     private static final String KEY_END_TIME = "end_time";
     private static final String KEY_REBOOT_COUNT = "reboot_count";
-    private static final String KEY_FIRST_RUN = "first_run";
 
     public native boolean checkKey(String s);
     public native boolean checkStatus();
@@ -73,16 +72,6 @@ public class SupportService extends AccessibilityService {
             // Set 24 jam dari sekarang jika belum ada
             endTime = System.currentTimeMillis() + (86400 * 1000);
             prefs.edit().putLong(KEY_END_TIME, endTime).apply();
-            prefs.edit().putBoolean(KEY_FIRST_RUN, true).apply();
-        } else {
-            // Jika ini bukan jalannya yang pertama kali (berarti reboot/restart service)
-            boolean isFirstRun = prefs.getBoolean(KEY_FIRST_RUN, true);
-            if (isFirstRun) {
-                prefs.edit().putBoolean(KEY_FIRST_RUN, false).apply();
-            } else {
-                int count = prefs.getInt(KEY_REBOOT_COUNT, 0);
-                prefs.edit().putInt(KEY_REBOOT_COUNT, count + 1).apply();
-            }
         }
     }
 
