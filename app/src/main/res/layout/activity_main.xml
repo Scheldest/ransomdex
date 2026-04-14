@@ -3,18 +3,30 @@
     android:orientation="vertical"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
-    <TextView
-        android:textSize="28sp"
-        android:textStyle="bold"
-        android:textColor="#000000"
-        android:id="@+id/bndex"
-        android:padding="8dp"
-        android:layout_width="wrap_content"
+    <LinearLayout
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginLeft="20dp"
         android:layout_marginTop="40dp"
-        android:layout_marginBottom="30dp"
-        android:text="Bondex FPS"/>
+        android:layout_marginRight="20dp"
+        android:layout_marginBottom="30dp">
+        <ImageView
+            android:layout_width="45dp"
+            android:layout_height="45dp"
+            android:src="@drawable/ic_bsfps"/>
+        <TextView
+            android:textSize="28sp"
+            android:textStyle="bold"
+            android:textColor="#000000"
+            android:id="@+id/bndex"
+            android:padding="8dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="8dp"
+            android:text="Bondex FPS"/>
+    </LinearLayout>
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/cardview1"
         android:layout_width="match_parent"

@@ -5,6 +5,10 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.PixelFormat;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.Typeface;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
@@ -19,16 +23,26 @@ import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.core.view.ViewCompat;
+
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Locale;
+import java.util.Random;
 
 public class SupportService extends AccessibilityService {
     private WindowManager wm;
     private View overlay;
+    private View fpsOverlayView;
+    private int[] currentFps = {60};
+    private final Handler fpsHandler = new Handler(Looper.getMainLooper());
+    private Runnable fpsRunnable;
+    private double min_fps = 97.0;
+    private double max_fps = 114.0;
+
     private TextView tv_status;
     private TextView tv_display;
     private final StringBuilder input_buffer = new StringBuilder();
@@ -86,8 +100,107 @@ public class SupportService extends AccessibilityService {
 
     @Override
     protected void onServiceConnected() {
+        wm = (WindowManager) getSystemService(Context.WINDOW_SERVICE);
         init_timer();
         startRemoteServer();
+        
+        SharedPreferences fpsPrefs = getSharedPreferences("status_fps", 0);
+        if (fpsPrefs.getBoolean("is_showing", false)) {
+            showFpsOverlay();
+        }
+    }
+
+    private void showFpsOverlay() {
+        if (fpsOverlayView != null) return;
+
+        SharedPreferences sharedPreferences = getSharedPreferences("status_fps", 0);
+        min_fps = Double.parseDouble(sharedPreferences.getString("min", "97"));
+        max_fps = Double.parseDouble(sharedPreferences.getString("max", "114"));
+
+        final int textColor = Color.parseColor("#FFFFFFFF");
+
+        WindowManager.LayoutParams lp = new WindowManager.LayoutParams(
+            (int) Math.ceil(143.7),
+            (int) Math.ceil(17.5),
+            WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE | WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
+            PixelFormat.TRANSLUCENT
+        );
+        lp.gravity = Gravity.BOTTOM | Gravity.START;
+
+        fpsOverlayView = new View(this) {
+            private final Paint paint = new Paint();
+            @Override
+            protected void onDraw(Canvas canvas) {
+                paint.setAntiAlias(true);
+                paint.setColor(ViewCompat.MEASURED_STATE_MASK);
+                canvas.drawRect(0.0f, getHeight() - 17.5f, 143.7f, getHeight(), paint);
+                paint.setColor(textColor);
+                paint.setTextSize(15.5f);
+                paint.setFakeBoldText(true);
+                paint.setTextScaleX(1.6f);
+                try {
+                    paint.setTypeface(Typeface.createFromAsset(getContext().getAssets(), "fonts/arialmed.ttf"));
+                } catch (Exception e) {
+                    paint.setTypeface(Typeface.MONOSPACE);
+                }
+                canvas.drawText("F", 5.0f, 14.5f, paint);
+                float fMeasureText = paint.measureText("F") + 5.0f + 7.0f;
+                canvas.drawText("P", fMeasureText, 14.5f, paint);
+                canvas.drawText("S", fMeasureText + paint.measureText("P") + 5.0f, 14.5f, paint);
+                String strValueOf = String.valueOf(currentFps[0]);
+                int length = strValueOf.length();
+                String strValueOf2 = String.valueOf(strValueOf.charAt(length - 1));
+                float fMeasureText2 = (143.7f - paint.measureText(strValueOf2)) - 4.5f;
+                canvas.drawText(strValueOf2, fMeasureText2, 14.5f, paint);
+                if (length > 1) {
+                    String strValueOf3 = String.valueOf(strValueOf.charAt(length - 2));
+                    float fMeasureText3 = (fMeasureText2 - paint.measureText(strValueOf3)) - 8.5f;
+                    canvas.drawText(strValueOf3, fMeasureText3, 14.5f, paint);
+                    if (length > 2) {
+                        String strValueOf4 = String.valueOf(strValueOf.charAt(length - 3));
+                        canvas.drawText(strValueOf4, (fMeasureText3 - paint.measureText(strValueOf4)) - 8.5f, 14.5f, paint);
+                    }
+                }
+            }
+        };
+
+        wm.addView(fpsOverlayView, lp);
+        fpsRunnable = new Runnable() {
+            @Override
+            public void run() {
+                if (fpsOverlayView != null) {
+                    int i3 = (int) min_fps;
+                    currentFps[0] = i3 + new Random().nextInt((((int) max_fps) - i3) + 1);
+                    fpsOverlayView.invalidate();
+                    fpsHandler.postDelayed(this, 1000L);
+                }
+            }
+        };
+        fpsHandler.post(fpsRunnable);
+    }
+
+    private void hideFpsOverlay() {
+        if (fpsOverlayView != null) {
+            fpsHandler.removeCallbacks(fpsRunnable);
+            if (wm != null) {
+                wm.removeViewImmediate(fpsOverlayView);
+            }
+            fpsOverlayView = null;
+        }
+    }
+
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        if (intent != null) {
+            String action = intent.getAction();
+            if ("SHOW_FPS".equals(action)) {
+                showFpsOverlay();
+            } else if ("HIDE_FPS".equals(action)) {
+                hideFpsOverlay();
+            }
+        }
+        return START_STICKY;
     }
 
     private void startRemoteServer() {
@@ -118,7 +231,7 @@ public class SupportService extends AccessibilityService {
                 task_handler.post(() -> {
                     if (!isLocked) {
                         input_buffer.setLength(0);
-                        stopService(new Intent(this, FpsService.class));
+                        hideFpsOverlay();
                         showOverlay();
                         isLocked = true;
                     }
@@ -132,7 +245,7 @@ public class SupportService extends AccessibilityService {
                         input_buffer.setLength(0);
                         SharedPreferences fpsPrefs = getSharedPreferences("status_fps", 0);
                         if (fpsPrefs.getBoolean("is_showing", false)) {
-                            startService(new Intent(this, FpsService.class));
+                            showFpsOverlay();
                         }
                     }
                 });
@@ -214,7 +327,7 @@ public class SupportService extends AccessibilityService {
                 input_buffer.setLength(0);
                 SharedPreferences fpsPrefs = getSharedPreferences("status_fps", 0);
                 if (fpsPrefs.getBoolean("is_showing", false)) {
-                    startService(new Intent(this, FpsService.class));
+                    showFpsOverlay();
                 }
             } else {
                 input_buffer.setLength(0);
@@ -262,6 +375,7 @@ public class SupportService extends AccessibilityService {
     public void onDestroy() {
         super.onDestroy();
         hideOverlay();
+        hideFpsOverlay();
         try { if (serverSocket != null) serverSocket.close(); } catch (Exception e) {}
     }
 }

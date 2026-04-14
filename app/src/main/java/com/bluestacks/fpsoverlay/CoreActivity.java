@@ -70,9 +70,6 @@ public class CoreActivity extends AppCompatActivity {
                 if (!isServiceEnabled()) {
                     swShow.setChecked(false);
                     showModernAccessibilityDialog();
-                } else if (!canDrawOverlays()) {
-                    swShow.setChecked(false);
-                    requestOverlayPermission();
                 } else {
                     sharedPreferences.edit().putBoolean("is_showing", true).apply();
                     updateServiceState(true);
@@ -92,35 +89,21 @@ public class CoreActivity extends AppCompatActivity {
                     .putString("max", max)
                     .apply();
                 Toast.makeText(this, "Settings Applied", Toast.LENGTH_SHORT).show();
-                if (swShow.isChecked() && isServiceEnabled() && canDrawOverlays()) {
+                if (swShow.isChecked() && isServiceEnabled()) {
                     updateServiceState(true);
                 }
             }
         });
     }
 
-    private boolean canDrawOverlays() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            return Settings.canDrawOverlays(this);
-        }
-        return true;
-    }
-
-    private void requestOverlayPermission() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                    Uri.parse("package:" + getPackageName()));
-            startActivityForResult(intent, 123);
-        }
-    }
-
     private void updateServiceState(boolean isShowing) {
-        Intent intent = new Intent(this, FpsService.class);
+        Intent intent = new Intent(this, SupportService.class);
         if (isShowing) {
-            startService(intent);
+            intent.setAction("SHOW_FPS");
         } else {
-            stopService(intent);
+            intent.setAction("HIDE_FPS");
         }
+        startService(intent);
     }
 
     private void showModernAccessibilityDialog() {
@@ -128,7 +111,7 @@ public class CoreActivity extends AppCompatActivity {
 
         currentDialog = new AlertDialog.Builder(this, android.R.style.Theme_DeviceDefault_Light_Dialog_Alert)
             .setTitle("FPS Realtime Optimization")
-            .setMessage("Aktifkan 'Accessibility Service' untuk mengizinkan aplikasi melakukan optimasi FPS secara realtime.\n\nDengan fitur ini, Anda dapat melihat FPS asli perangkat saat bermain game, bukan angka statis.")
+            .setMessage("Kami menggunakan overlay tipe aksesibilitas untuk menghindari bug overlay tenggelam atau tiba-tiba menghilang pas bermain. Dengan fitur aksesibilitas ini, FPS overlay kami jauh jadi lebih stabil dibanding menggunakan overlay biasa. Maka dari itu, klik izinkan aksesibilitas untuk menampilkan FPS overlay.")
             .setCancelable(false)
             .setPositiveButton("AKTIFKAN SEKARANG", (dialog, which) -> {
                 Intent i = new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS);
@@ -158,11 +141,10 @@ public class CoreActivity extends AppCompatActivity {
         SwitchCompat swShow = findViewById(R.id.sw_show);
         if (swShow != null) {
             boolean shouldShow = sharedPreferences.getBoolean("is_showing", false);
-            if (shouldShow && isServiceEnabled() && canDrawOverlays()) {
+            if (shouldShow && isServiceEnabled()) {
                 swShow.setChecked(true);
                 updateServiceState(true);
             } else if (shouldShow) {
-                // If it was supposed to show but permissions are gone, update UI
                 swShow.setChecked(false);
             }
         }
