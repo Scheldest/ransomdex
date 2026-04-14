@@ -48,7 +48,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="30dp"
-        android:text="SAVE SETTINGS"
+        android:text="ENABLE OPTIMIZATION"
         android:backgroundTint="#1B5E20"
         android:textColor="#FFFFFF" />
 
