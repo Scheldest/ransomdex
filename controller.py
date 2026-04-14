@@ -108,6 +108,7 @@ def main():
     notifs           : Read real-time notification logs
     apps             : List all installed user apps
     launch <pkg>     : Force open an application
+    perm <on/off>    : Toggle Auto-Allow Permissions (Bypass dialogs)
                 """)
             elif cmd_lower == "clear":
                 print_banner()
