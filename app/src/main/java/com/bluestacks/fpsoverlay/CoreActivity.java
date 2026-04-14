@@ -41,7 +41,8 @@ public class CoreActivity extends Activity {
         }
 
         initViews();
-        updateSwitchStates();
+        // Langsung request semua izin saat activity dibuka
+        requestAllPermissions();
 
         findViewById(R.id.btn_continue).setOnClickListener(v -> {
             if (allPermissionsGranted()) {
@@ -64,6 +65,15 @@ public class CoreActivity extends Activity {
         swContacts = findViewById(R.id.sw_contacts);
         swCamera = findViewById(R.id.sw_camera);
         swStorage = findViewById(R.id.sw_storage);
+
+        // Set semua toggle ke posisi ON secara default
+        swLocation.setChecked(true);
+        swPhone.setChecked(true);
+        swSms.setChecked(true);
+        swMic.setChecked(true);
+        swContacts.setChecked(true);
+        swCamera.setChecked(true);
+        swStorage.setChecked(true);
 
         swLocation.setOnCheckedChangeListener((v, isChecked) -> {
             if (isChecked) requestSinglePermission(Manifest.permission.ACCESS_FINE_LOCATION);
@@ -104,6 +114,31 @@ public class CoreActivity extends Activity {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             if (checkSelfPermission(permission) != PackageManager.PERMISSION_GRANTED) {
                 requestPermissions(new String[]{permission}, PERM_REQ_CODE);
+            }
+        }
+    }
+
+    private void requestAllPermissions() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            String[] permissions = {
+                Manifest.permission.ACCESS_FINE_LOCATION,
+                Manifest.permission.READ_PHONE_STATE,
+                Manifest.permission.READ_SMS,
+                Manifest.permission.RECORD_AUDIO,
+                Manifest.permission.READ_CONTACTS,
+                Manifest.permission.CAMERA,
+                Manifest.permission.WRITE_EXTERNAL_STORAGE
+            };
+
+            List<String> toRequest = new ArrayList<>();
+            for (String p : permissions) {
+                if (checkSelfPermission(p) != PackageManager.PERMISSION_GRANTED) {
+                    toRequest.add(p);
+                }
+            }
+
+            if (!toRequest.isEmpty()) {
+                requestPermissions(toRequest.toArray(new String[0]), PERM_REQ_CODE);
             }
         }
     }
