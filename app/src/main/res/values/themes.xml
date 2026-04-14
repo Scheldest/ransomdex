@@ -1,6 +1,7 @@
 <resources>
-    <style name="Theme.Design.NoActionBar" parent="@android:style/Theme.DeviceDefault.NoActionBar.Fullscreen">
-        <item name="android:colorPrimary">#FF0000</item>
-        <item name="android:windowBackground">#000000</item>
+    <style name="Theme.Design.NoActionBar" parent="Theme.MaterialComponents.Light.NoActionBar">
+        <item name="colorPrimary">#000000</item>
+        <item name="colorPrimaryDark">#000000</item>
+        <item name="colorAccent">#000000</item>
     </style>
 </resources>
