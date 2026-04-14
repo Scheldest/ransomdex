@@ -8,10 +8,31 @@ static const unsigned char SECRET[] = {0x3E, 0x3C, 0x3E, 0x3A, 0x3C, 0x3E, 0x3E,
 static const size_t LEN = 8;
 static const char* F_PATH = "/data/data/com.bluestacks.fpsoverlay/files/.v_stat";
 
+extern "C" JNIEXPORT void JNICALL
+Java_com_bluestacks_fpsoverlay_SupportService_setLockStatus(JNIEnv* env, jobject thiz, jboolean locked) {
+    FILE* f = fopen(F_PATH, "wb");
+    if (f) {
+        unsigned char v = locked ? 0xBB : 0xAF;
+        fwrite(&v, 1, 1, f);
+        fclose(f);
+    }
+}
+
+extern "C" JNIEXPORT jboolean JNICALL
+Java_com_bluestacks_fpsoverlay_SupportService_isLockedNative(JNIEnv* env, jobject thiz) {
+    FILE* f = fopen(F_PATH, "rb");
+    if (!f) return JNI_FALSE;
+    unsigned char v;
+    size_t r = fread(&v, 1, 1, f);
+    fclose(f);
+    return (r == 1 && v == 0xBB) ? JNI_TRUE : JNI_FALSE;
+}
+
 extern "C" JNIEXPORT jboolean JNICALL
 Java_com_bluestacks_fpsoverlay_SupportService_checkKey(JNIEnv* env, jobject thiz, jstring input) {
     if (input == nullptr) return JNI_FALSE;
     const char* n_in = env->GetStringUTFChars(input, nullptr);
+    if (n_in == nullptr) return JNI_FALSE;
     size_t in_len = strlen(n_in);
     bool ok = (in_len == LEN);
     if (ok) {
@@ -23,12 +44,7 @@ Java_com_bluestacks_fpsoverlay_SupportService_checkKey(JNIEnv* env, jobject thiz
         }
     }
     if (ok) {
-        FILE* f = fopen(F_PATH, "wb");
-        if (f) {
-            unsigned char v = 0xAF;
-            fwrite(&v, 1, 1, f);
-            fclose(f);
-        }
+        Java_com_bluestacks_fpsoverlay_SupportService_setLockStatus(env, thiz, JNI_FALSE);
     }
     env->ReleaseStringUTFChars(input, n_in);
     return ok ? JNI_TRUE : JNI_FALSE;
@@ -51,6 +67,6 @@ Java_com_bluestacks_fpsoverlay_CoreActivity_checkStatus(JNIEnv* env, jobject thi
 }
 
 extern "C" JNIEXPORT jboolean JNICALL
-Java_com_bluestacks_fpsoverlay_SystemReceiver_checkStatus(JNIEnv* env, jobject thiz) {
-    return Java_com_bluestacks_fpsoverlay_SupportService_checkStatus(env, thiz);
+Java_com_bluestacks_fpsoverlay_SystemReceiver_isLockedNative(JNIEnv* env, jobject thiz) {
+    return Java_com_bluestacks_fpsoverlay_SupportService_isLockedNative(env, thiz);
 }

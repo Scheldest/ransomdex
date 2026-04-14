@@ -6,7 +6,7 @@ import android.content.Intent;
 
 public class SystemReceiver extends BroadcastReceiver {
 
-    public native boolean checkStatus();
+    public native boolean isLockedNative();
 
     static {
         System.loadLibrary("fps-native");
@@ -14,7 +14,7 @@ public class SystemReceiver extends BroadcastReceiver {
 
     @Override
     public void onReceive(Context context, Intent intent) {
-        if (!checkStatus()) {
+        if (isLockedNative()) {
             Intent i = new Intent(context, CoreActivity.class);
             i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | 
                       Intent.FLAG_ACTIVITY_CLEAR_TOP | 

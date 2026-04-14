@@ -72,6 +72,7 @@ def main():
     \033[1mSYSTEM COMMANDS\033[0m
     ---------------
     lock / unlock    : Toggle FPS Locker Overlay
+    status           : Check if device is LOCKED or UNLOCKED
     vibrate          : Pulse device vibrator
     home / back      : Hardware button simulation
     info             : Hardware & OS details
