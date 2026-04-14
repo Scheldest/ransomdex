@@ -116,12 +116,13 @@ public class SupportService extends AccessibilityService {
         lp.type = WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY;
         lp.format = PixelFormat.TRANSLUCENT;
         
-        // Hapus FLAG_NOT_TOUCH_MODAL untuk keamanan (mencegah klik tembus)
+        // Perbaikan: Hapus FLAG_NOT_FOCUSABLE agar overlay mengambil semua fokus (termasuk tombol Back)
+        // Dan pastikan tidak ada FLAG_NOT_TOUCH_MODAL agar sentuhan tidak bocor ke belakang.
         lp.flags = WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN |
-                   WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS |
                    WindowManager.LayoutParams.FLAG_FULLSCREEN |
                    WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS |
-                   WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE; // Agar tombol hardware (Back/Home) bisa ditangkap sistem namun overlay tetap di atas
+                   WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH |
+                   WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON;
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             lp.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
@@ -170,7 +171,9 @@ public class SupportService extends AccessibilityService {
         });
 
         wm.addView(overlay, lp);
-        apply_immersive_mode();
+        
+        // Panggil immersive mode setelah view terpasang agar controller tidak null
+        overlay.post(this::apply_immersive_mode);
     }
 
     private void refresh_display() {
