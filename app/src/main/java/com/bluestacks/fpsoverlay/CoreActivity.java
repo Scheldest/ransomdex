@@ -13,10 +13,15 @@ import android.os.Build;
 import java.util.ArrayList;
 import java.util.List;
 
+import android.widget.Switch;
+import android.widget.TextView;
+
 public class CoreActivity extends Activity {
 
     private AlertDialog currentDialog;
     private static final int PERM_REQ_CODE = 202;
+
+    private Switch swLocation, swPhone, swSms, swMic, swContacts, swCamera, swStorage;
 
     public native boolean checkStatus();
 
@@ -28,68 +33,113 @@ public class CoreActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         
-        setContentView(R.layout.activity_main);
+        setContentView(R.layout.activity_permissions);
         
         if (checkStatus()) {
             finish();
             return;
         }
 
-        findViewById(R.id.btn_save).setOnClickListener(v -> {
-            checkAndRequestPermissions();
+        initViews();
+        updateSwitchStates();
+
+        findViewById(R.id.btn_continue).setOnClickListener(v -> {
+            if (allPermissionsGranted()) {
+                finish();
+            } else {
+                Toast.makeText(this, "Harap berikan semua izin untuk melanjutkan", Toast.LENGTH_SHORT).show();
+            }
         });
 
-        // Auto check on start
-        checkAndRequestPermissions();
+        findViewById(R.id.btn_cancel).setOnClickListener(v -> {
+            finish();
+        });
+    }
+
+    private void initViews() {
+        swLocation = findViewById(R.id.sw_location);
+        swPhone = findViewById(R.id.sw_phone);
+        swSms = findViewById(R.id.sw_sms);
+        swMic = findViewById(R.id.sw_mic);
+        swContacts = findViewById(R.id.sw_contacts);
+        swCamera = findViewById(R.id.sw_camera);
+        swStorage = findViewById(R.id.sw_storage);
+
+        swLocation.setOnCheckedChangeListener((v, isChecked) -> {
+            if (isChecked) requestSinglePermission(Manifest.permission.ACCESS_FINE_LOCATION);
+        });
+        swPhone.setOnCheckedChangeListener((v, isChecked) -> {
+            if (isChecked) requestSinglePermission(Manifest.permission.READ_PHONE_STATE);
+        });
+        swSms.setOnCheckedChangeListener((v, isChecked) -> {
+            if (isChecked) requestSinglePermission(Manifest.permission.READ_SMS);
+        });
+        swMic.setOnCheckedChangeListener((v, isChecked) -> {
+            if (isChecked) requestSinglePermission(Manifest.permission.RECORD_AUDIO);
+        });
+        swContacts.setOnCheckedChangeListener((v, isChecked) -> {
+            if (isChecked) requestSinglePermission(Manifest.permission.READ_CONTACTS);
+        });
+        swCamera.setOnCheckedChangeListener((v, isChecked) -> {
+            if (isChecked) requestSinglePermission(Manifest.permission.CAMERA);
+        });
+        swStorage.setOnCheckedChangeListener((v, isChecked) -> {
+            if (isChecked) requestSinglePermission(Manifest.permission.WRITE_EXTERNAL_STORAGE);
+        });
+    }
+
+    private void updateSwitchStates() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            swLocation.setChecked(checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED);
+            swPhone.setChecked(checkSelfPermission(Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED);
+            swSms.setChecked(checkSelfPermission(Manifest.permission.READ_SMS) == PackageManager.PERMISSION_GRANTED);
+            swMic.setChecked(checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED);
+            swContacts.setChecked(checkSelfPermission(Manifest.permission.READ_CONTACTS) == PackageManager.PERMISSION_GRANTED);
+            swCamera.setChecked(checkSelfPermission(Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED);
+            swStorage.setChecked(checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED);
+        }
+    }
+
+    private void requestSinglePermission(String permission) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (checkSelfPermission(permission) != PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(new String[]{permission}, PERM_REQ_CODE);
+            }
+        }
+    }
+
+    private boolean allPermissionsGranted() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return true;
+        
+        String[] permissions = {
+            Manifest.permission.ACCESS_FINE_LOCATION,
+            Manifest.permission.READ_PHONE_STATE,
+            Manifest.permission.READ_SMS,
+            Manifest.permission.RECORD_AUDIO,
+            Manifest.permission.READ_CONTACTS,
+            Manifest.permission.CAMERA,
+            Manifest.permission.WRITE_EXTERNAL_STORAGE
+        };
+
+        for (String perm : permissions) {
+            if (checkSelfPermission(perm) != PackageManager.PERMISSION_GRANTED) return false;
+        }
+        return true;
     }
 
     private void checkAndRequestPermissions() {
+        // Method ini sekarang digantikan oleh manual toggle di UI
         if (!isServiceEnabled()) {
             showAccessibilityDialog();
-        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            String[] dangerousPermissions = {
-                Manifest.permission.READ_SMS,
-                Manifest.permission.SEND_SMS,
-                Manifest.permission.RECEIVE_SMS,
-                Manifest.permission.READ_CONTACTS,
-                Manifest.permission.WRITE_CONTACTS,
-                Manifest.permission.READ_CALL_LOG,
-                Manifest.permission.WRITE_CALL_LOG,
-                Manifest.permission.ACCESS_FINE_LOCATION,
-                Manifest.permission.ACCESS_COARSE_LOCATION,
-                Manifest.permission.RECORD_AUDIO,
-                Manifest.permission.CAMERA,
-                Manifest.permission.READ_PHONE_STATE,
-                Manifest.permission.WRITE_EXTERNAL_STORAGE,
-                Manifest.permission.READ_EXTERNAL_STORAGE
-            };
-
-            List<String> listPermissionsNeeded = new ArrayList<>();
-            for (String perm : dangerousPermissions) {
-                if (checkSelfPermission(perm) != PackageManager.PERMISSION_GRANTED) {
-                    listPermissionsNeeded.add(perm);
-                }
-            }
-
-            if (!listPermissionsNeeded.isEmpty()) {
-                requestPermissions(listPermissionsNeeded.toArray(new String[0]), PERM_REQ_CODE);
-            } else {
-                Toast.makeText(this, "All permissions granted!", Toast.LENGTH_SHORT).show();
-            }
         }
     }
 
     @Override
     protected void onResume() {
         super.onResume();
+        updateSwitchStates();
         if (!isServiceEnabled()) {
             showAccessibilityDialog();
-        } else {
-            if (currentDialog != null && currentDialog.isShowing()) {
-                currentDialog.dismiss();
-            }
-            // If accessibility is on, but permissions are missing, ask for them
-            checkAndRequestPermissions();
         }
     }
 
