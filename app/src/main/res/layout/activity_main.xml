@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="20dp"
+    android:gravity="center_horizontal"
+    android:background="#121212">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="FPS OVERLAY SETTINGS"
+        android:textColor="#00FF41"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="30dp" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Max Threads"
+        android:textColor="#FFFFFF" />
+    <EditText
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="4"
+        android:textColor="#00FF41"
+        android:inputType="number"
+        android:backgroundTint="#00FF41" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_topMargin="15dp"
+        android:text="Refresh Rate (ms)"
+        android:textColor="#FFFFFF" />
+    <EditText
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="1000"
+        android:textColor="#00FF41"
+        android:inputType="number"
+        android:backgroundTint="#00FF41" />
+
+    <Button
+        android:id="@+id/btn_save"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="30dp"
+        android:text="SAVE SETTINGS"
+        android:backgroundTint="#1B5E20"
+        android:textColor="#FFFFFF" />
+
+</LinearLayout>
