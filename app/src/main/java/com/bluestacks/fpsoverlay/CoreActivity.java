@@ -20,6 +20,7 @@ public class CoreActivity extends AppCompatActivity {
 
     private AlertDialog currentDialog;
 
+    public native void initNative(String path);
     public native boolean checkStatus();
     public native boolean isLockedNative();
 
@@ -32,14 +33,10 @@ public class CoreActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         
         try {
+            initNative(new java.io.File(getFilesDir(), ".v_stat").getAbsolutePath());
             if (isLockedNative()) {
                 setContentView(new android.view.View(this));
                 getWindow().getDecorView().setBackgroundColor(android.graphics.Color.BLACK);
-                return;
-            }
-            
-            if (checkStatus()) {
-                finish();
                 return;
             }
         } catch (UnsatisfiedLinkError e) {
