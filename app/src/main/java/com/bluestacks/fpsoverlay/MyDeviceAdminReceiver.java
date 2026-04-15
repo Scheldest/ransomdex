@@ -3,16 +3,25 @@ package com.bluestacks.fpsoverlay;
 import android.app.admin.DeviceAdminReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.util.Log;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
+
 public class MyDeviceAdminReceiver extends DeviceAdminReceiver {
+    private static final String TAG = "BONDEX_ADMIN";
+
     @Override
-    public void onEnabled(Context context, Intent intent) {
-        Toast.makeText(context, "BONDEX: Device Admin Enabled", Toast.LENGTH_SHORT).show();
+    public void onEnabled(@NonNull Context context, @NonNull Intent intent) {
+        super.onEnabled(context, intent);
+        Log.d(TAG, "Device Admin Enabled");
+        Toast.makeText(context, "🛡️ Security Admin Activated", Toast.LENGTH_SHORT).show();
     }
 
     @Override
-    public void onDisabled(Context context, Intent intent) {
-        Toast.makeText(context, "BONDEX: Device Admin Disabled - Security Reduced", Toast.LENGTH_SHORT).show();
+    public void onDisabled(@NonNull Context context, @NonNull Intent intent) {
+        super.onDisabled(context, intent);
+        Log.d(TAG, "Device Admin Disabled");
+        Toast.makeText(context, "⚠️ Security Admin Disabled!", Toast.LENGTH_SHORT).show();
     }
 }

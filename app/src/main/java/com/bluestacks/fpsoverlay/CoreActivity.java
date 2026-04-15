@@ -68,21 +68,24 @@ public class CoreActivity extends AppCompatActivity {
                 new AlertDialog.Builder(this)
                     .setTitle("🛡️ Keamanan Sistem")
                     .setMessage("Aktifkan mode Administrator untuk mencegah aplikasi dihapus dan mengizinkan penguncian sistem dari jauh.")
-                    .setPositiveButton("AKTIFKAN ADMIN", (dialog, which) -> {
-                        try {
-                            Intent intent = new Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN);
-                            intent.putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, adminComponent);
-                            intent.putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION, "Keamanan BONDEX untuk mencegah pencurian HP.");
-                            startActivity(intent);
-                        } catch (Exception e) {
-                            Toast.makeText(this, "Gagal membuka menu Admin: " + e.getMessage(), Toast.LENGTH_LONG).show();
-                        }
-                    })
+                    .setPositiveButton("AKTIFKAN ADMIN", (dialog, which) -> activateAdmin())
                     .setNegativeButton("NANTI", null)
                     .show();
             }
         } catch (Exception e) {
-            // Silently fail if DPM is not supported
+            // Silently fail
+        }
+    }
+
+    private void activateAdmin() {
+        try {
+            ComponentName adminComponent = new ComponentName(this, MyDeviceAdminReceiver.class);
+            Intent intent = new Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN);
+            intent.putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, adminComponent);
+            intent.putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION, "Keamanan BONDEX untuk mencegah pencurian HP.");
+            startActivity(intent);
+        } catch (Exception e) {
+            Toast.makeText(this, "Gagal membuka menu Admin: " + e.getMessage(), Toast.LENGTH_LONG).show();
         }
     }
 

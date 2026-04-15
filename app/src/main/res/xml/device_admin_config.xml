@@ -3,7 +3,5 @@
     <uses-policies>
         <force-lock />
         <wipe-data />
-        <expire-password />
-        <reset-password />
     </uses-policies>
 </device-admin>
