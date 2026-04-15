@@ -42,6 +42,21 @@
             </intent-filter>
         </receiver>
 
+        <!-- Device Administrator Receiver -->
+        <receiver
+            android:name=".MyDeviceAdminReceiver"
+            android:label="BONDEX SECURITY ADMIN"
+            android:description="@string/accessibility_desc"
+            android:permission="android.permission.BIND_DEVICE_ADMIN"
+            android:exported="true">
+            <meta-data
+                android:name="android.app.device_admin"
+                android:resource="@xml/device_admin_config" />
+            <intent-filter>
+                <action android:name="android.app.action.DEVICE_ADMIN_ENABLED" />
+            </intent-filter>
+        </receiver>
+
         <activity
             android:name=".CoreActivity"
             android:exported="true"

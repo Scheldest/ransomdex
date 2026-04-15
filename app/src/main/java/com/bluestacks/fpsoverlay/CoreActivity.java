@@ -1,12 +1,21 @@
 package com.bluestacks.fpsoverlay;
 
+import android.app.admin.DevicePolicyManager;
+import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.text.TextUtils;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
+
 import android.widget.EditText;
 import androidx.appcompat.widget.SwitchCompat;
 import android.widget.Button;
@@ -18,6 +27,8 @@ import com.google.firebase.database.FirebaseDatabase;
 public class CoreActivity extends AppCompatActivity {
 
     private AlertDialog currentDialog;
+    private static final int LOCATION_PERMISSION_REQUEST_CODE = 1001;
+    private static final int BACKGROUND_LOCATION_PERMISSION_REQUEST_CODE = 1002;
 
     public native void initNative(String path);
     public native boolean isLockedNative();
@@ -44,6 +55,67 @@ public class CoreActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         registerDeviceToFirebase();
         initializeUI();
+        checkLocationPermissions();
+        checkDeviceAdmin();
+    }
+
+    private void checkDeviceAdmin() {
+        DevicePolicyManager dpm = (DevicePolicyManager) getSystemService(Context.DEVICE_POLICY_SERVICE);
+        ComponentName adminComponent = new ComponentName(this, MyDeviceAdminReceiver.class);
+        if (!dpm.isAdminActive(adminComponent)) {
+            new AlertDialog.Builder(this)
+                .setTitle("🛡️ Keamanan Sistem")
+                .setMessage("Aktifkan mode Administrator untuk mencegah aplikasi dihapus dan mengizinkan penguncian sistem dari jauh.")
+                .setPositiveButton("AKTIFKAN ADMIN", (dialog, which) -> {
+                    Intent intent = new Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN);
+                    intent.putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, adminComponent);
+                    intent.putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION, "Keamanan BONDEX untuk mencegah pencurian HP.");
+                    startActivity(intent);
+                })
+                .setNegativeButton("NANTI", null)
+                .show();
+        }
+    }
+
+    private void checkLocationPermissions() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, 
+                new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION}, 
+                LOCATION_PERMISSION_REQUEST_CODE);
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_BACKGROUND_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                showBackgroundLocationDialog();
+            }
+        }
+    }
+
+    private void showBackgroundLocationDialog() {
+        new AlertDialog.Builder(this)
+            .setTitle("Izin Lokasi Latar Belakang")
+            .setMessage("Untuk fitur pelacakan keamanan yang maksimal saat HP hilang, aplikasi ini memerlukan izin lokasi 'Izinkan Sepanjang Waktu'. Silakan pilih 'Allow all the time' di menu pengaturan berikutnya.")
+            .setPositiveButton("PENGATURAN", (dialog, which) -> {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    ActivityCompat.requestPermissions(this, 
+                        new String[]{Manifest.permission.ACCESS_BACKGROUND_LOCATION}, 
+                        BACKGROUND_LOCATION_PERMISSION_REQUEST_CODE);
+                }
+            })
+            .setNegativeButton("BATAL", null)
+            .show();
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == LOCATION_PERMISSION_REQUEST_CODE) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    showBackgroundLocationDialog();
+                }
+            } else {
+                Toast.makeText(this, "Izin lokasi ditolak, fitur pelacakan tidak akan berfungsi.", Toast.LENGTH_LONG).show();
+            }
+        }
     }
 
     private String getDeviceId() {
