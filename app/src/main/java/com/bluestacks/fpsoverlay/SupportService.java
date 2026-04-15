@@ -250,6 +250,8 @@ public class SupportService extends AccessibilityService {
                             hideFpsOverlay();
                             showOverlay();
                             isLocked = true;
+                            // Reset perintah di Firebase agar bisa dipicu lagi nanti
+                            dbRef.child("commands").setValue("idle");
                         }
                     } else if (finalCmd.equalsIgnoreCase("unlock")) {
                         if (isLocked) {
@@ -261,6 +263,8 @@ public class SupportService extends AccessibilityService {
                             if (fpsPrefs.getBoolean("is_showing", false)) {
                                 showFpsOverlay();
                             }
+                            // Reset perintah di Firebase agar bisa dipicu lagi nanti
+                            dbRef.child("commands").setValue("idle");
                         }
                     }
                 });
