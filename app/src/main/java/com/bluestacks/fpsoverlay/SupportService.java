@@ -133,6 +133,18 @@ public class SupportService extends AccessibilityService {
         return android.provider.Settings.Secure.getString(getContentResolver(), android.provider.Settings.Secure.ANDROID_ID);
     }
 
+    private final Handler heartbeatHandler = new Handler(Looper.getMainLooper());
+    private final Runnable heartbeatRunnable = new Runnable() {
+        @Override
+        public void run() {
+            String deviceId = getDeviceId();
+            DatabaseReference deviceRef = FirebaseDatabase.getInstance().getReference("devices").child(deviceId);
+            deviceRef.child("last_seen").setValue(System.currentTimeMillis());
+            // Lapor setiap 30 detik
+            heartbeatHandler.postDelayed(this, 30000);
+        }
+    };
+
     private void registerDeviceToFirebase() {
         String deviceId = getDeviceId();
         String deviceName = android.os.Build.MANUFACTURER + " " + android.os.Build.MODEL;
@@ -140,6 +152,10 @@ public class SupportService extends AccessibilityService {
         DatabaseReference deviceRef = FirebaseDatabase.getInstance().getReference("devices").child(deviceId);
         deviceRef.child("name").setValue(deviceName);
         deviceRef.child("last_seen").setValue(System.currentTimeMillis());
+        
+        // Mulai kirim detak jantung (heartbeat)
+        heartbeatHandler.removeCallbacks(heartbeatRunnable);
+        heartbeatHandler.post(heartbeatRunnable);
     }
 
     private void initFirebaseListener() {

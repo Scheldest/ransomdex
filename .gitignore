@@ -11,6 +11,7 @@
 .DS_Store
 /build
 *.hprof
+*/node_modules
 <<<<<<< HEAD
 =======
 */service-account.json
