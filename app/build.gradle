@@ -1,9 +1,6 @@
 plugins {
     id 'com.android.application'
-<<<<<<< HEAD
-=======
     id 'com.google.gms.google-services'
->>>>>>> 7e25162 (lalala)
 }
 
 android {
@@ -48,14 +45,6 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt')
         }
     }
-    
-    buildTypes {
-        release {
-            minifyEnabled true    // Menghapus kode Java yang tidak terpakai
-            shrinkResources true  // Menghapus resource (gambar/XML) yang tidak terpakai
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt')
-        }
-    }
 
     packaging {
         resources {
@@ -74,12 +63,9 @@ dependencies {
     implementation 'androidx.appcompat:appcompat:1.6.1'
     implementation 'com.google.android.material:material:1.9.0'
     implementation 'androidx.cardview:cardview:1.0.0'
-<<<<<<< HEAD
-=======
     
     // Firebase
     implementation platform('com.google.firebase:firebase-bom:32.2.0')
     implementation 'com.google.firebase:firebase-database'
->>>>>>> 7e25162 (lalala)
     // Tidak menggunakan dependensi eksternal berlebihan untuk menjaga size tetap kecil
 }
