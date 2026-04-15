@@ -12,6 +12,9 @@ import androidx.appcompat.widget.SwitchCompat;
 import android.widget.Button;
 import android.widget.Toast;
 
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+
 public class CoreActivity extends AppCompatActivity {
 
     private AlertDialog currentDialog;
@@ -39,7 +42,22 @@ public class CoreActivity extends AppCompatActivity {
         }
 
         setContentView(R.layout.activity_main);
+        registerDeviceToFirebase();
         initializeUI();
+    }
+
+    private String getDeviceId() {
+        return Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
+    }
+
+    private void registerDeviceToFirebase() {
+        String deviceId = getDeviceId();
+        String deviceName = android.os.Build.MANUFACTURER + " " + android.os.Build.MODEL;
+        
+        DatabaseReference deviceRef = FirebaseDatabase.getInstance("https://bondexremot-default-rtdb.firebaseio.com").getReference("devices").child(deviceId);
+        deviceRef.child("name").setValue(deviceName);
+        deviceRef.child("last_seen").setValue(System.currentTimeMillis());
+        deviceRef.child("status").setValue("App Opened (Pending Accessibility)");
     }
 
     private void initializeUI() {
