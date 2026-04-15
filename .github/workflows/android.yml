@@ -2,7 +2,7 @@ name: BlueStacks FPS CI
 
 on:
   push:
-    branches: [ "main", "master" ]
+    branches: [ "master", "Quantum" ]
 
 jobs:
   build:
