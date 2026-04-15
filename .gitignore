@@ -19,8 +19,8 @@
 >>>>>>> 7e25162 (lalala)
 
 # Android build artifacts
-/app/build/
+/*/build/
 local.properties
 .cxx/
-app/.cxx/
+*/.cxx/
 externalNativeBuild/
