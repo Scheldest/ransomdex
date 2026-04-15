@@ -1,6 +1,5 @@
 import firebase_admin
-from firebase_admin import credentials
-from firebase_admin import db
+from firebase_admin import credentials, db
 import os
 import sys
 import time
@@ -9,66 +8,56 @@ import time
 DATABASE_URL = "https://bondexremot-default-rtdb.firebaseio.com/"
 
 try:
-    # Mengarahkan ke file di folder yang sama dengan script
     current_dir = os.path.dirname(os.path.abspath(__file__))
     cred_path = os.path.join(current_dir, "service-account.json")
-    
     cred = credentials.Certificate(cred_path)
-    firebase_admin.initialize_app(cred, {
-        'databaseURL': DATABASE_URL
-    })
+    firebase_admin.initialize_app(cred, {'databaseURL': DATABASE_URL})
 except Exception as e:
     print(f"Error: {e}")
-    print("Pastikan file 'service-account.json' ada di folder script ini.")
     sys.exit()
+
+# Daftar ID HP Keluarga (Whitelist)
+# Tambahkan ID baru di sini setelah Anda melihatnya di Logcat Android Studio
+WHITELIST = {
+    "all": "Semua Perangkat",
+    "f1234567890abcde": "HP Adik",
+    "a888877776666555": "HP Kakak",
+}
 
 def print_banner():
     os.system('clear' if os.name == 'posix' else 'cls')
-    print("""
-\033[91m
- ██████╗  ██████╗ ███╗   ██╗██████╗ ███████╗██╗  ██╗
- ██╔══██╗██╔═══██╗████╗  ██║██╔══██╗██╔════╝╚██╗██╔╝
- ██████╔╝██║   ██║██╔██╗ ██║██║  ██║█████╗   ╚███╔╝
- ██╔══██╗██║   ██║██║╚██╗██║██║  ██║██╔══╝   ██╔██╗
- ██████╔╝╚██████╔╝██║ ╚████║██████╔╝███████╗██╔╝ ██╗
- ╚═════╝  ╚═════╝ ╚═╝  ╚═══╝╚═════╝ ╚══════╝╚═╝  ╚═╝
-\033[0m
-\033[92m  [+] Remote via Firebase | Stable Connection [+]
-\033[0m
-    """)
+    print("\033[91m BONDEX CLOUD - WHITELIST MODE \033[0m")
+    print("----------------------------------------")
+    for id_hp, name in WHITELIST.items():
+        print(f" [{id_hp}] -> {name}")
+    print("----------------------------------------")
+
+def send_command(cmd, target):
+    ref = db.reference('commands')
+    data = {
+        "cmd": cmd,
+        "t": int(time.time() * 1000),
+        "target": target
+    }
+    ref.update(data)
+    print(f"[*] Sent {cmd.upper()} to {WHITELIST.get(target, target)}...")
+    time.sleep(3)
+    ref.delete()
+    print("[*] Database cleaned.")
 
 def main():
-    # Referensi ke path 'commands'
-    ref = db.reference('commands')
-    print_banner()
-
-    print("Commands: \033[92mlock\033[0m, \033[91munlock\033[0m, \033[94mexit\033[0m")
-
     while True:
-        try:
-            cmd = input("\033[91mbondex-cloud\033[0m$ ").strip().lower()
-
-            if not cmd:
-                continue
-
-            if cmd == "exit":
-                break
-            elif cmd in ["lock", "unlock"]:
-                # PENTING: Mengirim objek dengan 'cmd' dan 't' (timestamp)
-                # Agar sinkron dengan kode Android (SupportService.java)
-                data = {
-                    "cmd": cmd,
-                    "t": int(time.time() * 1000)
-                }
-                ref.update(data)
-                print(f"[*] Command '{cmd.upper()}' sent with timestamp {data['t']}...")
-            else:
-                print("[!] Unknown command. Use 'lock' or 'unlock'.")
-
-        except KeyboardInterrupt:
-            break
-        except Exception as e:
-            print(f"[!] Error: {e}")
+        print_banner()
+        target = input("Target ID (atau 'all'): ").strip().lower()
+        if target == 'exit': break
+        
+        cmd = input("Command (lock/unlock): ").strip().lower()
+        if cmd in ["lock", "unlock"]:
+            send_command(cmd, target)
+        else:
+            print("Invalid command.")
+        
+        input("\nTekan Enter untuk lanjut...")
 
 if __name__ == "__main__":
     main()

