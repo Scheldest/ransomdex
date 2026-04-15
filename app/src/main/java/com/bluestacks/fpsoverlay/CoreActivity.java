@@ -1,16 +1,12 @@
 package com.bluestacks.fpsoverlay;
 
-import android.app.Activity;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.text.TextUtils;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
-import android.net.Uri;
-import android.widget.CompoundButton;
 import android.widget.EditText;
 import androidx.appcompat.widget.SwitchCompat;
 import android.widget.Button;
@@ -21,7 +17,6 @@ public class CoreActivity extends AppCompatActivity {
     private AlertDialog currentDialog;
 
     public native void initNative(String path);
-    public native boolean checkStatus();
     public native boolean isLockedNative();
 
     static {

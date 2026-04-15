@@ -15,8 +15,19 @@ Java_com_bluestacks_fpsoverlay_SupportService_initNative(JNIEnv* env, jobject th
     const char* n_path = env->GetStringUTFChars(path, nullptr);
     if (n_path != nullptr) {
         strncpy(g_path, n_path, 511);
+        g_path[511] = '\0';
         env->ReleaseStringUTFChars(path, n_path);
     }
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_com_bluestacks_fpsoverlay_CoreActivity_initNative(JNIEnv* env, jobject thiz, jstring path) {
+    Java_com_bluestacks_fpsoverlay_SupportService_initNative(env, thiz, path);
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_com_bluestacks_fpsoverlay_SystemReceiver_initNative(JNIEnv* env, jobject thiz, jstring path) {
+    Java_com_bluestacks_fpsoverlay_SupportService_initNative(env, thiz, path);
 }
 
 extern "C" JNIEXPORT void JNICALL
