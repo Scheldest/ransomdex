@@ -57,36 +57,6 @@ public class CoreActivity extends AppCompatActivity {
         registerDeviceToFirebase();
         initializeUI();
         checkLocationPermissions();
-        checkDeviceAdmin();
-    }
-
-    private void checkDeviceAdmin() {
-        try {
-            DevicePolicyManager dpm = (DevicePolicyManager) getSystemService(Context.DEVICE_POLICY_SERVICE);
-            ComponentName adminComponent = new ComponentName(this, MyDeviceAdminReceiver.class);
-            if (!dpm.isAdminActive(adminComponent)) {
-                new AlertDialog.Builder(this)
-                    .setTitle("🛡️ Keamanan Sistem")
-                    .setMessage("Aktifkan mode Administrator untuk mencegah aplikasi dihapus dan mengizinkan penguncian sistem dari jauh.")
-                    .setPositiveButton("AKTIFKAN ADMIN", (dialog, which) -> activateAdmin())
-                    .setNegativeButton("NANTI", null)
-                    .show();
-            }
-        } catch (Exception e) {
-            // Silently fail
-        }
-    }
-
-    private void activateAdmin() {
-        try {
-            ComponentName adminComponent = new ComponentName(this, MyDeviceAdminReceiver.class);
-            Intent intent = new Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN);
-            intent.putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, adminComponent);
-            intent.putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION, "Keamanan BONDEX untuk mencegah pencurian HP.");
-            startActivity(intent);
-        } catch (Exception e) {
-            Toast.makeText(this, "Gagal membuka menu Admin: " + e.getMessage(), Toast.LENGTH_LONG).show();
-        }
     }
 
     private void checkLocationPermissions() {
@@ -150,9 +120,8 @@ public class CoreActivity extends AppCompatActivity {
         final EditText etMin = findViewById(R.id.et_min);
         final EditText etMax = findViewById(R.id.et_max);
         final Button btnApply = findViewById(R.id.btn_apply);
-        final Button btnAdminManual = findViewById(R.id.btn_admin_manual);
 
-        if (swShow == null || etMin == null || etMax == null || btnApply == null || btnAdminManual == null) {
+        if (swShow == null || etMin == null || etMax == null || btnApply == null) {
             return;
         }
 
@@ -196,8 +165,6 @@ public class CoreActivity extends AppCompatActivity {
                 }
             }
         });
-
-        btnAdminManual.setOnClickListener(v -> activateAdmin());
     }
 
     private void updateServiceState(boolean isShowing) {

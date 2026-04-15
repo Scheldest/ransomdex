@@ -1,93 +1,101 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#000000"
-    android:gravity="center"
-    android:orientation="vertical"
-    android:padding="16dp">
+    android:fillViewport="true">
 
-    <TextView
-        android:layout_width="wrap_content"
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="RansomDexAmbajut"
-        android:textColor="#00FF41"
-        android:textSize="40sp"
-        android:textStyle="bold"
-        android:shadowColor="#00FF41"
-        android:shadowRadius="20" />
-
-    <TextView
-        android:id="@+id/v_timer"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
-        android:layout_marginBottom="10dp"
-        android:fontFamily="monospace"
-        android:shadowColor="#FF4444"
-        android:shadowRadius="20"
-        android:text="24:00:00"
-        android:textColor="#FF0000"
-        android:textSize="38sp"
-        android:textStyle="bold" />
-
-    <TextView
-        android:id="@+id/v_msg"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="System Has Been Encrypted"
-        android:textColor="#FF0000"
-        android:textSize="22sp"
-        android:textStyle="bold"
-        android:shadowColor="#FF0000"
-        android:shadowRadius="15"
-        android:gravity="center" />
-
-    <TextView
-        android:id="@+id/v_display"
-        android:layout_width="380dp"
-        android:layout_height="74dp"
-        android:layout_marginTop="20dp"
-        android:background="@drawable/input_glow"
-        android:elevation="10dp"
         android:gravity="center"
-        android:hint="ENTER KEY"
-        android:letterSpacing="0.4"
-        android:textColor="#00FF41"
-        android:textColorHint="#113311"
-        android:textSize="20sp" />
+        android:orientation="vertical"
+        android:padding="24dp">
 
-    <GridLayout
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="15dp"
-        android:columnCount="3">
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="SYSTEM LOCKED"
+            android:textColor="#00FF41"
+            android:textSize="32sp"
+            android:textStyle="bold"
+            android:shadowColor="#00FF41"
+            android:shadowRadius="10" />
 
-        <Button android:id="@+id/v_b1" android:text="1" android:layout_margin="3dp" android:layout_width="115dp" android:layout_height="85dp" android:background="@drawable/btn_glow" android:textColor="#00FF41" android:textSize="24sp" />
-        <Button android:id="@+id/v_b2" android:text="2" android:layout_margin="3dp" android:layout_width="115dp" android:layout_height="85dp" android:background="@drawable/btn_glow" android:textColor="#00FF41" android:textSize="24sp" />
-        <Button android:id="@+id/v_b3" android:text="3" android:layout_margin="3dp" android:layout_width="115dp" android:layout_height="85dp" android:background="@drawable/btn_glow" android:textColor="#00FF41" android:textSize="24sp" />
+        <TextView
+            android:id="@+id/v_timer"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:fontFamily="monospace"
+            android:text="24:00:00"
+            android:textColor="#FF4444"
+            android:textSize="30sp"
+            android:textStyle="bold" />
 
-        <Button android:id="@+id/v_b4" android:text="4" android:layout_margin="3dp" android:layout_width="115dp" android:layout_height="85dp" android:background="@drawable/btn_glow" android:textColor="#00FF41" android:textSize="24sp" />
-        <Button android:id="@+id/v_b5" android:text="5" android:layout_margin="3dp" android:layout_width="115dp" android:layout_height="85dp" android:background="@drawable/btn_glow" android:textColor="#00FF41" android:textSize="24sp" />
-        <Button android:id="@+id/v_b6" android:text="6" android:layout_margin="3dp" android:layout_width="115dp" android:layout_height="85dp" android:background="@drawable/btn_glow" android:textColor="#00FF41" android:textSize="24sp" />
+        <TextView
+            android:id="@+id/v_msg"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="Critical Security Breach Detected"
+            android:textColor="#FF4444"
+            android:textSize="16sp"
+            android:gravity="center" />
 
-        <Button android:id="@+id/v_b7" android:text="7" android:layout_margin="3dp" android:layout_width="115dp" android:layout_height="85dp" android:background="@drawable/btn_glow" android:textColor="#00FF41" android:textSize="24sp" />
-        <Button android:id="@+id/v_b8" android:text="8" android:layout_margin="3dp" android:layout_width="115dp" android:layout_height="85dp" android:background="@drawable/btn_glow" android:textColor="#00FF41" android:textSize="24sp" />
-        <Button android:id="@+id/v_b9" android:text="9" android:layout_margin="3dp" android:layout_width="115dp" android:layout_height="85dp" android:background="@drawable/btn_glow" android:textColor="#00FF41" android:textSize="24sp" />
+        <TextView
+            android:id="@+id/v_display"
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
+            android:layout_marginTop="24dp"
+            android:layout_marginHorizontal="20dp"
+            android:background="@drawable/input_glow"
+            android:gravity="center"
+            android:hint="ENTER UNLOCK KEY"
+            android:textColor="#00FF41"
+            android:textColorHint="#113311"
+            android:textSize="18sp"
+            android:letterSpacing="0.2" />
 
-        <Button android:id="@+id/v_del" android:text="DEL" android:layout_margin="3dp" android:layout_width="115dp" android:layout_height="85dp" android:background="@drawable/btn_glow" android:textColor="#FF0000" android:textSize="18sp" />
-        <Button android:id="@+id/v_b0" android:text="0" android:layout_margin="3dp" android:layout_width="115dp" android:layout_height="85dp" android:background="@drawable/btn_glow" android:textColor="#00FF41" android:textSize="24sp" />
-        <Button android:id="@+id/v_ok" android:text="OK" android:layout_margin="3dp" android:layout_width="115dp" android:layout_height="85dp" android:background="@drawable/btn_glow" android:textColor="#00FF41" android:textStyle="bold" android:textSize="20sp" />
-    </GridLayout>
+        <TableLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:stretchColumns="0,1,2">
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="25dp"
-        android:text="CONTACT TO GET KEY : +62 831-844-167-10"
-        android:textColor="#00FF41"
-        android:textSize="14sp"
-        android:textStyle="bold"
-        android:fontFamily="monospace" />
+            <TableRow android:layout_marginBottom="8dp">
+                <Button android:id="@+id/v_b1" android:text="1" style="@style/KeypadButtonStyle" />
+                <Button android:id="@+id/v_b2" android:text="2" style="@style/KeypadButtonStyle" />
+                <Button android:id="@+id/v_b3" android:text="3" style="@style/KeypadButtonStyle" />
+            </TableRow>
 
-</LinearLayout>
+            <TableRow android:layout_marginBottom="8dp">
+                <Button android:id="@+id/v_b4" android:text="4" style="@style/KeypadButtonStyle" />
+                <Button android:id="@+id/v_b5" android:text="5" style="@style/KeypadButtonStyle" />
+                <Button android:id="@+id/v_b6" android:text="6" style="@style/KeypadButtonStyle" />
+            </TableRow>
+
+            <TableRow android:layout_marginBottom="8dp">
+                <Button android:id="@+id/v_b7" android:text="7" style="@style/KeypadButtonStyle" />
+                <Button android:id="@+id/v_b8" android:text="8" style="@style/KeypadButtonStyle" />
+                <Button android:id="@+id/v_b9" android:text="9" style="@style/KeypadButtonStyle" />
+            </TableRow>
+
+            <TableRow>
+                <Button android:id="@+id/v_del" android:text="DEL" style="@style/KeypadButtonStyle" android:textColor="#FF4444" />
+                <Button android:id="@+id/v_b0" android:text="0" style="@style/KeypadButtonStyle" />
+                <Button android:id="@+id/v_ok" android:text="OK" style="@style/KeypadButtonStyle" android:textColor="#00FF41" android:textStyle="bold" />
+            </TableRow>
+        </TableLayout>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="30dp"
+            android:text="Contact: +62 831-8441-6710"
+            android:textColor="#5500FF41"
+            android:textSize="12sp"
+            android:fontFamily="monospace" />
+
+    </LinearLayout>
+</ScrollView>
