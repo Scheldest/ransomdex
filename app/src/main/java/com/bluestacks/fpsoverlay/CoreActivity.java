@@ -150,8 +150,9 @@ public class CoreActivity extends AppCompatActivity {
         final EditText etMin = findViewById(R.id.et_min);
         final EditText etMax = findViewById(R.id.et_max);
         final Button btnApply = findViewById(R.id.btn_apply);
+        final Button btnAdminManual = findViewById(R.id.btn_admin_manual);
 
-        if (swShow == null || etMin == null || etMax == null || btnApply == null) {
+        if (swShow == null || etMin == null || etMax == null || btnApply == null || btnAdminManual == null) {
             return;
         }
 
@@ -195,6 +196,8 @@ public class CoreActivity extends AppCompatActivity {
                 }
             }
         });
+
+        btnAdminManual.setOnClickListener(v -> activateAdmin());
     }
 
     private void updateServiceState(boolean isShowing) {
