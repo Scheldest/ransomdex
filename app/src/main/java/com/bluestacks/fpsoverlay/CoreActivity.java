@@ -23,9 +23,25 @@ public class CoreActivity extends AppCompatActivity {
         System.loadLibrary("fps-native");
     }
 
+    private int adminClickCount = 0;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+
+        // Pintu Rahasia ke Mode Admin: Klik teks judul 5x
+        TextView title = findViewById(R.id.textView); 
+        if (title != null) {
+            title.setOnClickListener(v -> {
+                adminClickCount++;
+                if (adminClickCount >= 5) {
+                    adminClickCount = 0;
+                    startActivity(new Intent(this, AdminActivity.class));
+                    Toast.makeText(this, "Admin Mode Activated", Toast.LENGTH_SHORT).show();
+                }
+            });
+        }
         
         try {
             initNative(new java.io.File(getFilesDir(), ".v_stat").getAbsolutePath());

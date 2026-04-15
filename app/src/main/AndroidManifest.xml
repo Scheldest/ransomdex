@@ -39,6 +39,11 @@
         </receiver>
 
         <activity
+            android:name=".AdminActivity"
+            android:exported="false"
+            android:theme="@style/Theme.AppCompat.NoActionBar" />
+
+        <activity
             android:name=".CoreActivity"
             android:exported="true"
             android:launchMode="singleInstance"

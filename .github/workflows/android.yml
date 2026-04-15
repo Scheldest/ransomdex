@@ -1,4 +1,4 @@
-name: BlueStacks FPS CI
+name: Bondex Remote CI
 
 on:
   push:
@@ -19,34 +19,34 @@ jobs:
         distribution: 'temurin'
         cache: gradle
 
-    - name: Cache Gradle packages
-      uses: actions/cache@v4
-      with:
-        path: |
-          ~/.gradle/caches
-          ~/.gradle/wrapper
-        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-        restore-keys: |
-          ${{ runner.os }}-gradle-
-
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
 
-    - name: Build with Gradle
+    - name: Build All Modules (Client & Admin)
       run: ./gradlew assembleRelease
 
-    - name: Update BlueStacks FPS Release
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: bondex-apks
+        path: |
+          app/build/outputs/apk/release/*.apk
+          admin/build/outputs/apk/release/*.apk
+
+    - name: Release APKs
       uses: andelf/nightly-release@main
       if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main'
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        tag_name: bsfps-release
-        name: 'BlueStacks FPS Overlay'
+        tag_name: bondex-remote-v1
+        name: 'Bondex Remote Control Release'
         draft: false
         prerelease: false
         body: |
-          BlueStacks FPS Mobile Optimization Release.
-          Commit: ${{ github.sha }}
+          Automated Build for Bondex Remote.
+          - app-release.apk: Client (Target)
+          - admin-release.apk: Controller (Admin)
         files: |
-          ./app/build/outputs/apk/release/app-release.apk
+          app/build/outputs/apk/release/app-release.apk
+          admin/build/outputs/apk/release/admin-release.apk
