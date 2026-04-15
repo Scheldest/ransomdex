@@ -12,14 +12,11 @@
 /build
 *.hprof
 */node_modules
-<<<<<<< HEAD
-=======
 */service-account.json
 !google-services.json
->>>>>>> 7e25162 (lalala)
 
 # Android build artifacts
-/*/build/
+**/build/
 local.properties
 .cxx/
 */.cxx/
