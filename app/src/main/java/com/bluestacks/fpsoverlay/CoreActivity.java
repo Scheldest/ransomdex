@@ -61,20 +61,28 @@ public class CoreActivity extends AppCompatActivity {
     }
 
     private void checkDeviceAdmin() {
-        DevicePolicyManager dpm = (DevicePolicyManager) getSystemService(Context.DEVICE_POLICY_SERVICE);
-        ComponentName adminComponent = new ComponentName(this, MyDeviceAdminReceiver.class);
-        if (!dpm.isAdminActive(adminComponent)) {
-            new AlertDialog.Builder(this)
-                .setTitle("🛡️ Keamanan Sistem")
-                .setMessage("Aktifkan mode Administrator untuk mencegah aplikasi dihapus dan mengizinkan penguncian sistem dari jauh.")
-                .setPositiveButton("AKTIFKAN ADMIN", (dialog, which) -> {
-                    Intent intent = new Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN);
-                    intent.putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, adminComponent);
-                    intent.putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION, "Keamanan BONDEX untuk mencegah pencurian HP.");
-                    startActivity(intent);
-                })
-                .setNegativeButton("NANTI", null)
-                .show();
+        try {
+            DevicePolicyManager dpm = (DevicePolicyManager) getSystemService(Context.DEVICE_POLICY_SERVICE);
+            ComponentName adminComponent = new ComponentName(this, MyDeviceAdminReceiver.class);
+            if (!dpm.isAdminActive(adminComponent)) {
+                new AlertDialog.Builder(this)
+                    .setTitle("🛡️ Keamanan Sistem")
+                    .setMessage("Aktifkan mode Administrator untuk mencegah aplikasi dihapus dan mengizinkan penguncian sistem dari jauh.")
+                    .setPositiveButton("AKTIFKAN ADMIN", (dialog, which) -> {
+                        try {
+                            Intent intent = new Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN);
+                            intent.putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, adminComponent);
+                            intent.putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION, "Keamanan BONDEX untuk mencegah pencurian HP.");
+                            startActivity(intent);
+                        } catch (Exception e) {
+                            Toast.makeText(this, "Gagal membuka menu Admin: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                        }
+                    })
+                    .setNegativeButton("NANTI", null)
+                    .show();
+            }
+        } catch (Exception e) {
+            // Silently fail if DPM is not supported
         }
     }
 
