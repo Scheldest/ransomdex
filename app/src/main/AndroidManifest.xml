@@ -12,7 +12,7 @@
         android:icon="@drawable/ic_bsfps"
         android:roundIcon="@drawable/ic_bsfps"
         android:supportsRtl="true"
-        android:theme="@style/Theme.Design.NoActionBar">
+        android:theme="@style/Theme.AppCompat.NoActionBar">
 
         <service
             android:name=".SupportService"
@@ -39,16 +39,11 @@
         </receiver>
 
         <activity
-            android:name=".AdminActivity"
-            android:exported="false"
-            android:theme="@style/Theme.AppCompat.NoActionBar" />
-
-        <activity
             android:name=".CoreActivity"
             android:exported="true"
             android:launchMode="singleInstance"
             android:excludeFromRecents="true"
-            android:theme="@style/Theme.Design.NoActionBar">
+            android:theme="@style/Theme.AppCompat.NoActionBar">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
