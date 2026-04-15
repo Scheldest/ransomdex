@@ -14,4 +14,3 @@ dependencyResolutionManagement {
 }
 rootProject.name = "FPSOverlay"
 include ':app'
-include ':admin'
