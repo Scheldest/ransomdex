@@ -4,11 +4,11 @@ plugins {
 }
 
 android {
-    namespace 'com.bondex.admin'
+    namespace 'com.bluestacks.fpsoverlay.admin'
     compileSdk 34
 
     defaultConfig {
-        applicationId "com.bondex.admin"
+        applicationId "com.bluestacks.fpsoverlay" // Disamakan dengan Firebase
         minSdk 21
         targetSdk 34
         versionCode 1

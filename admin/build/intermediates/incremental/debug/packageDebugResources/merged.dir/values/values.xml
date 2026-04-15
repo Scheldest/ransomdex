@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="gcm_defaultSenderId" translatable="false">264563189373</string>
+    <string name="google_api_key" translatable="false">AIzaSyDO1jAzCd0zyaO0B0m-cqheTMyygGQQAZg</string>
+    <string name="google_app_id" translatable="false">1:264563189373:android:988e7eb2707b75f62e3314</string>
+    <string name="google_crash_reporting_api_key" translatable="false">AIzaSyDO1jAzCd0zyaO0B0m-cqheTMyygGQQAZg</string>
+    <string name="google_storage_bucket" translatable="false">bondexremot.firebasestorage.app</string>
+    <string name="project_id" translatable="false">bondexremot</string>
+</resources>

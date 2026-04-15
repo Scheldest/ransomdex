@@ -1,0 +1,4 @@
+com.bluestacks.fpsoverlay.admin.test.admin-androidTest-0 C:\Users\runneradmin\Downloads\ransomdex\admin\build\generated\res\resValues\androidTest\debug
+com.bluestacks.fpsoverlay.admin.test.admin-mergeDebugAndroidTestResources-1 C:\Users\runneradmin\Downloads\ransomdex\admin\build\intermediates\incremental\debugAndroidTest\mergeDebugAndroidTestResources\merged.dir
+com.bluestacks.fpsoverlay.admin.test.admin-mergeDebugAndroidTestResources-2 C:\Users\runneradmin\Downloads\ransomdex\admin\build\intermediates\incremental\debugAndroidTest\mergeDebugAndroidTestResources\stripped.dir
+com.bluestacks.fpsoverlay.admin.test.admin-merged_res-3 C:\Users\runneradmin\Downloads\ransomdex\admin\build\intermediates\merged_res\debugAndroidTest

@@ -1,0 +1,20 @@
+{
+    "logs": [
+        {
+            "outputFile": "com.bluestacks.fpsoverlay.admin-mergeDebugResources-30:/values-watch-v21/values-watch-v21.xml",
+            "map": [
+                {
+                    "source": "C:\\Users\\runneradmin\\.gradle\\caches\\transforms-3\\69d07b9d74b94b57e192922afd4dea87\\transformed\\appcompat-1.6.1\\res\\values-watch-v21\\values-watch-v21.xml",
+                    "from": {
+                        "startLines": "2,6,10",
+                        "startColumns": "4,4,4",
+                        "startOffsets": "55,271,499",
+                        "endLines": "5,9,13",
+                        "endColumns": "12,12,12",
+                        "endOffsets": "266,494,724"
+                    }
+                }
+            ]
+        }
+    ]
+}
