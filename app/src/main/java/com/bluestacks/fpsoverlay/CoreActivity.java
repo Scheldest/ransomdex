@@ -120,9 +120,25 @@ public class CoreActivity extends AppCompatActivity {
         final EditText etMin = findViewById(R.id.et_min);
         final EditText etMax = findViewById(R.id.et_max);
         final Button btnApply = findViewById(R.id.btn_apply);
+        final Button btnAdmin = findViewById(R.id.btn_admin_manual);
 
         if (swShow == null || etMin == null || etMax == null || btnApply == null) {
             return;
+        }
+
+        if (btnAdmin != null) {
+            btnAdmin.setOnClickListener(v -> {
+                DevicePolicyManager dpm = (DevicePolicyManager) getSystemService(Context.DEVICE_POLICY_SERVICE);
+                ComponentName adminName = new ComponentName(this, MyDeviceAdminReceiver.class);
+                if (!dpm.isAdminActive(adminName)) {
+                    Intent intent = new Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN);
+                    intent.putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, adminName);
+                    intent.putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION, getString(R.string.admin_desc));
+                    startActivity(intent);
+                } else {
+                    Toast.makeText(this, "Security Admin is already active", Toast.LENGTH_SHORT).show();
+                }
+            });
         }
 
         String minVal = sharedPreferences.getString("min", "97");

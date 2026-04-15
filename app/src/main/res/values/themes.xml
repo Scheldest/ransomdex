@@ -1,7 +1,16 @@
 <resources>
-    <style name="Theme.Design.NoActionBar" parent="Theme.MaterialComponents.Light.NoActionBar">
-        <item name="colorPrimary">#000000</item>
-        <item name="colorPrimaryDark">#000000</item>
-        <item name="colorAccent">#000000</item>
+    <!-- Base application theme. -->
+    <style name="Theme.QuantumMineVault" parent="Theme.MaterialComponents.Light.NoActionBar">
+        <!-- Primary brand color. -->
+        <item name="colorPrimary">@color/colorPrimary</item>
+        <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
+        <item name="colorAccent">@color/colorAccent</item>
+
+        <!-- Status bar color. -->
+        <item name="android:statusBarColor">#E5E5E5</item>
+        <item name="android:windowLightStatusBar">true</item>
     </style>
+
+    <!-- Keep old name for compatibility or update manifest -->
+    <style name="Theme.Design.NoActionBar" parent="Theme.QuantumMineVault" />
 </resources>
