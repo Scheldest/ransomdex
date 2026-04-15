@@ -11,6 +11,12 @@
 .DS_Store
 /build
 *.hprof
+<<<<<<< HEAD
+=======
+*/service-account.json
+*.json
+!google-services.json
+>>>>>>> 7e25162 (lalala)
 
 # Android build artifacts
 /app/build/
