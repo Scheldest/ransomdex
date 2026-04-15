@@ -14,7 +14,6 @@
 <<<<<<< HEAD
 =======
 */service-account.json
-*.json
 !google-services.json
 >>>>>>> 7e25162 (lalala)
 
