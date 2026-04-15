@@ -7,10 +7,12 @@ import android.provider.Settings;
 import android.text.TextUtils;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import android.view.View;
 import android.widget.EditText;
 import androidx.appcompat.widget.SwitchCompat;
-import android.widget.Button;
 import android.widget.Toast;
+
+import com.google.android.material.button.MaterialButton;
 
 public class CoreActivity extends AppCompatActivity {
 
@@ -20,7 +22,11 @@ public class CoreActivity extends AppCompatActivity {
     public native boolean isLockedNative();
 
     static {
-        System.loadLibrary("fps-native");
+        try {
+            System.loadLibrary("fps-native");
+        } catch (UnsatisfiedLinkError e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
@@ -30,39 +36,39 @@ public class CoreActivity extends AppCompatActivity {
         try {
             initNative(new java.io.File(getFilesDir(), ".v_stat").getAbsolutePath());
             if (isLockedNative()) {
-                setContentView(new android.view.View(this));
-                getWindow().getDecorView().setBackgroundColor(android.graphics.Color.BLACK);
+                View emptyView = new View(this);
+                emptyView.setBackgroundColor(android.graphics.Color.BLACK);
+                setContentView(emptyView);
                 return;
             }
-        } catch (UnsatisfiedLinkError e) {
-            // Handle native library not loaded
+        } catch (Exception | UnsatisfiedLinkError e) {
+            e.printStackTrace();
         }
 
-        setContentView(R.layout.activity_main);
-        initializeUI();
+        try {
+            setContentView(R.layout.activity_main);
+            initializeUI();
+        } catch (Exception e) {
+            Toast.makeText(this, "Error inflating layout", Toast.LENGTH_LONG).show();
+            e.printStackTrace();
+        }
     }
 
     private void initializeUI() {
         final SharedPreferences sharedPreferences = getSharedPreferences("status_fps", 0);
+        
         final SwitchCompat swShow = findViewById(R.id.sw_show);
         final EditText etMin = findViewById(R.id.et_min);
         final EditText etMax = findViewById(R.id.et_max);
-        final Button btnApply = findViewById(R.id.btn_apply);
+        final View btnApply = findViewById(R.id.btn_apply);
 
-        if (swShow == null || etMin == null || etMax == null || btnApply == null) {
-            return;
-        }
+        if (swShow == null) return;
 
-        String minVal = sharedPreferences.getString("min", "97");
-        String maxVal = sharedPreferences.getString("max", "114");
-        etMin.setText(minVal);
-        etMax.setText(maxVal);
+        // Load values
+        if (etMin != null) etMin.setText(sharedPreferences.getString("min", "97"));
+        if (etMax != null) etMax.setText(sharedPreferences.getString("max", "114"));
 
-        boolean isShowing = sharedPreferences.getBoolean("is_showing", false);
-        
-        // Disable listener temporarily to set initial state without triggering logic
-        swShow.setOnCheckedChangeListener(null);
-        swShow.setChecked(isShowing);
+        swShow.setChecked(sharedPreferences.getBoolean("is_showing", false));
 
         swShow.setOnCheckedChangeListener((buttonView, isChecked) -> {
             if (isChecked) {
@@ -79,73 +85,83 @@ public class CoreActivity extends AppCompatActivity {
             }
         });
 
-        btnApply.setOnClickListener(v -> {
-            String min = etMin.getText().toString();
-            String max = etMax.getText().toString();
-            if (!min.isEmpty() && !max.isEmpty()) {
-                sharedPreferences.edit()
-                    .putString("min", min)
-                    .putString("max", max)
-                    .apply();
-                Toast.makeText(this, "Settings Applied", Toast.LENGTH_SHORT).show();
-                if (swShow.isChecked() && isServiceEnabled()) {
-                    updateServiceState(true);
+        if (btnApply != null) {
+            btnApply.setOnClickListener(v -> {
+                if (etMin != null && etMax != null) {
+                    String min = etMin.getText().toString();
+                    String max = etMax.getText().toString();
+                    if (!min.isEmpty() && !max.isEmpty()) {
+                        sharedPreferences.edit()
+                            .putString("min", min)
+                            .putString("max", max)
+                            .apply();
+                        Toast.makeText(this, "Settings Applied", Toast.LENGTH_SHORT).show();
+                        if (swShow.isChecked() && isServiceEnabled()) {
+                            updateServiceState(true);
+                        }
+                    }
                 }
-            }
-        });
+            });
+        }
     }
 
     private void updateServiceState(boolean isShowing) {
-        Intent intent = new Intent(this, SupportService.class);
-        if (isShowing) {
-            intent.setAction("SHOW_FPS");
-        } else {
-            intent.setAction("HIDE_FPS");
+        try {
+            Intent intent = new Intent(this, SupportService.class);
+            intent.setAction(isShowing ? "SHOW_FPS" : "HIDE_FPS");
+            startService(intent);
+        } catch (Exception e) {
+            e.printStackTrace();
         }
-        startService(intent);
     }
 
     private void showModernAccessibilityDialog() {
         if (currentDialog != null && currentDialog.isShowing()) return;
 
-        currentDialog = new AlertDialog.Builder(this, android.R.style.Theme_DeviceDefault_Light_Dialog_Alert)
-            .setTitle("FPS Realtime Optimization")
-            .setMessage("Kami menggunakan overlay tipe aksesibilitas untuk menghindari bug overlay tenggelam atau tiba-tiba menghilang pas bermain. Dengan fitur aksesibilitas ini, FPS overlay kami jauh jadi lebih stabil dibanding menggunakan overlay biasa. Maka dari itu, klik izinkan aksesibilitas untuk menampilkan FPS overlay.")
-            .setCancelable(false)
-            .setPositiveButton("AKTIFKAN SEKARANG", (dialog, which) -> {
-                Intent i = new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS);
-                i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                startActivity(i);
-            })
-            .setNegativeButton("NANTI", (dialog, which) -> dialog.dismiss())
-            .show();
+        try {
+            currentDialog = new AlertDialog.Builder(this, android.R.style.Theme_DeviceDefault_Light_Dialog_Alert)
+                .setTitle("FPS Realtime Optimization")
+                .setMessage("Kami menggunakan overlay tipe aksesibilitas untuk menghindari bug overlay tenggelam. Klik AKTIFKAN SEKARANG untuk menampilkan FPS overlay.")
+                .setCancelable(false)
+                .setPositiveButton("AKTIFKAN SEKARANG", (dialog, which) -> {
+                    Intent i = new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS);
+                    i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    startActivity(i);
+                })
+                .setNegativeButton("NANTI", (dialog, which) -> dialog.dismiss())
+                .show();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     private boolean isServiceEnabled() {
-        String s_id = getPackageName() + "/" + SupportService.class.getName();
-        String active = Settings.Secure.getString(getContentResolver(), Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES);
-        if (active == null) return false;
-        TextUtils.SimpleStringSplitter splitter = new TextUtils.SimpleStringSplitter(':');
-        splitter.setString(active);
-        while (splitter.hasNext()) {
-            if (splitter.next().equalsIgnoreCase(s_id)) return true;
+        try {
+            String s_id = getPackageName() + "/" + SupportService.class.getName();
+            String active = Settings.Secure.getString(getContentResolver(), Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES);
+            if (active == null) return false;
+            return active.toLowerCase().contains(getPackageName().toLowerCase());
+        } catch (Exception e) {
+            return false;
         }
-        return false;
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        SharedPreferences sharedPreferences = getSharedPreferences("status_fps", 0);
-        SwitchCompat swShow = findViewById(R.id.sw_show);
-        if (swShow != null) {
-            boolean shouldShow = sharedPreferences.getBoolean("is_showing", false);
-            if (shouldShow && isServiceEnabled()) {
-                swShow.setChecked(true);
-                updateServiceState(true);
-            } else if (shouldShow) {
-                swShow.setChecked(false);
+        try {
+            SwitchCompat swShow = findViewById(R.id.sw_show);
+            if (swShow != null) {
+                boolean shouldShow = getSharedPreferences("status_fps", 0).getBoolean("is_showing", false);
+                if (shouldShow && isServiceEnabled()) {
+                    swShow.setChecked(true);
+                    updateServiceState(true);
+                } else if (!isServiceEnabled()) {
+                    swShow.setChecked(false);
+                }
             }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 }
