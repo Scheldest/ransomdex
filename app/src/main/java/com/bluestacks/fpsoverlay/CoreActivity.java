@@ -1,5 +1,6 @@
 package com.bluestacks.fpsoverlay;
 
+import android.Manifest;
 import android.app.admin.DevicePolicyManager;
 import android.content.ComponentName;
 import android.content.Context;
