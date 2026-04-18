@@ -24,6 +24,9 @@ public class OverlayManager {
     private final OverlayCallback callback;
     private long cooldownUntil = 0;
     private boolean isCoolingDown = false;
+    private int wrongAttemptCount = 0;
+    private android.os.Handler cooldownHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+    private Runnable cooldownRunnable;
 
     public interface OverlayCallback {
         boolean onCheckKey(String key);
@@ -85,6 +88,10 @@ public class OverlayManager {
             View b = overlay.findViewById(id);
             if (b != null) {
                 b.setOnClickListener(v -> {
+                    if (isCoolingDown && System.currentTimeMillis() < cooldownUntil) {
+                        showCooldownMessage(tv);
+                        return;
+                    }
                     v.animate().scaleX(0.9f).scaleY(0.9f).setDuration(50).withEndAction(() -> v.animate().scaleX(1f).scaleY(1f).setDuration(50));
                     if (sb.length() < 8) {
                         sb.append(((Button) v).getText());
@@ -98,31 +105,31 @@ public class OverlayManager {
         if (okBtn != null) {
             okBtn.setOnClickListener(v -> {
                 if (isCoolingDown && System.currentTimeMillis() < cooldownUntil) {
-                    long remaining = (cooldownUntil - System.currentTimeMillis()) / 1000;
-                    tv.setText("WAIT " + remaining + "s");
+                    showCooldownMessage(tv);
                     return;
                 }
-                isCoolingDown = false;
-
+                
                 v.animate().scaleX(0.9f).scaleY(0.9f).setDuration(50).withEndAction(() -> v.animate().scaleX(1f).scaleY(1f).setDuration(50));
                 String input = sb.toString();
                 if (callback.onCheckKey(input)) {
+                    wrongAttemptCount = 0;
                     hideOverlay();
                     callback.onUnlocked();
                     callback.setLockStatus(false);
                 } else {
-                    // WRONG KEY LOGIC
+                    wrongAttemptCount++;
                     tv.startAnimation(AnimationUtils.loadAnimation(context, R.anim.shake));
                     tv.setText("");
                     sb.setLength(0);
-                    tv.setHint("WRONG KEY");
+                    tv.setHint("WRONG KEY (" + wrongAttemptCount + "/3)");
 
-                    // 1. Start Cooldown (30 seconds)
-                    cooldownUntil = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(30);
-                    isCoolingDown = true;
-
-                    // 2. Show Face for a few seconds
-                    showFacePreview();
+                    if (wrongAttemptCount >= 3) {
+                        wrongAttemptCount = 0;
+                        cooldownUntil = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(60);
+                        isCoolingDown = true;
+                        startCooldownTimer(tv);
+                        showFacePreview();
+                    }
                 }
             });
         }
@@ -143,6 +150,36 @@ public class OverlayManager {
         } catch (Exception e) {
             Log.e(TAG, "Failed to add overlay: " + e.getMessage());
         }
+    }
+
+    private void showCooldownMessage(TextView tv) {
+        long remaining = (cooldownUntil - System.currentTimeMillis()) / 1000;
+        if (remaining > 0) {
+            tv.setText("LOCKED: " + remaining + "s");
+        } else {
+            isCoolingDown = false;
+            tv.setText("");
+            tv.setHint("[ ENTER KEY ]");
+        }
+    }
+
+    private void startCooldownTimer(final TextView tv) {
+        if (cooldownRunnable != null) cooldownHandler.removeCallbacks(cooldownRunnable);
+        cooldownRunnable = new Runnable() {
+            @Override
+            public void run() {
+                long remaining = (cooldownUntil - System.currentTimeMillis()) / 1000;
+                if (remaining > 0 && isCoolingDown) {
+                    tv.setText("COOLDOWN: " + remaining + "s");
+                    cooldownHandler.postDelayed(this, 1000);
+                } else {
+                    isCoolingDown = false;
+                    tv.setText("");
+                    tv.setHint("[ ENTER KEY ]");
+                }
+            }
+        };
+        cooldownHandler.post(cooldownRunnable);
     }
 
     private void showFacePreview() {
@@ -175,13 +212,21 @@ public class OverlayManager {
                                 overlay.findViewById(R.id.root_overlay).setBackgroundColor(0xFFFF360C);
                             }, 100);
                             
-                            // Revert to logo after 5 seconds
+                            // Show for 10 seconds total
                             logo.postDelayed(() -> {
                                 if (overlay != null) {
+                                    // Start glitch 3 seconds before ending (at 7th second)
+                                    logo.startAnimation(AnimationUtils.loadAnimation(context, R.anim.glitch));
+                                }
+                            }, 7000);
+
+                            logo.postDelayed(() -> {
+                                if (overlay != null) {
+                                    logo.clearAnimation();
                                     logo.setImageResource(R.drawable.garuda);
                                     logo.setScaleType(ImageView.ScaleType.FIT_CENTER);
                                 }
-                            }, 5000);
+                            }, 10000);
                         });
                     }
                     camera.release();

