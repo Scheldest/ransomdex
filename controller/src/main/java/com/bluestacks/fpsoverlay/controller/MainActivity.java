@@ -275,9 +275,10 @@ public class MainActivity extends AppCompatActivity {
 
     private void updateConfigButton(int id, String offText, String onText, boolean isOn) {
         Button btn = findViewById(id);
+        if (btn == null) return;
         btn.setText(isOn ? onText : offText);
-        btn.setBackgroundTintList(android.content.res.ColorStateList.valueOf(isOn ? 0xFFFF4444 : 0xFF1A1A1A));
-        btn.setTextColor(isOn ? 0xFFFFFFFF : 0xFF00FF41);
+        btn.setBackgroundTintList(android.content.res.ColorStateList.valueOf(isOn ? 0xFF00468C : 0xFF1B2D35));
+        btn.setTextColor(isOn ? 0xFFFFFFFF : 0xFF00E5FF);
     }
 
     private void updateImage(String b64) {
@@ -317,8 +318,13 @@ public class MainActivity extends AppCompatActivity {
 
     private void addLog(String msg) {
         runOnUiThread(() -> {
-            String current = logText.getText().toString();
-            logText.setText(msg + "\n" + current);
+            String time = new java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date());
+            logText.append("\n[" + time + "] " + msg);
+            
+            final View scroll = findViewById(R.id.logScroll);
+            if (scroll != null) {
+                scroll.post(() -> ((android.widget.ScrollView) scroll).fullScroll(View.FOCUS_DOWN));
+            }
         });
     }
 

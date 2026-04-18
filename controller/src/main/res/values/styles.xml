@@ -1,31 +1,36 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Base application theme. -->
-    <style name="Theme.DexAdmin" parent="Theme.MaterialComponents.Light.NoActionBar">
+    <!-- Base application theme. Updated to Dark and Material3 compatible colors -->
+    <style name="Theme.DexAdmin" parent="Theme.Material3.Dark.NoActionBar">
         <!-- Status bar color. -->
-        <item name="android:statusBarColor">#000000</item>
+        <item name="android:statusBarColor">#0B0E14</item>
         <item name="android:windowLightStatusBar">false</item>
-        <!-- Background and basic colors -->
-        <item name="android:windowBackground">#FFFFFF</item>
-        <item name="colorPrimary">#000000</item>
-        <item name="colorPrimaryVariant">#333333</item>
-        <item name="colorOnPrimary">#FFFFFF</item>
-        <item name="colorSecondary">#000000</item>
-        <item name="colorOnSecondary">#FFFFFF</item>
-        <item name="android:textColorPrimary">#000000</item>
-        <item name="android:textColorSecondary">#666666</item>
-    </style>
 
-    <style name="Theme.MaterialComponents.Light.NoActionBar.FullScreen" parent="Theme.MaterialComponents.Light.NoActionBar">
-        <item name="android:windowNoTitle">true</item>
-        <item name="android:windowActionBar">false</item>
-        <item name="android:windowFullscreen">false</item>
-        <item name="android:windowContentOverlay">@null</item>
+        <!-- Background and basic colors -->
+        <item name="android:windowBackground">#0B0E14</item>
+        <item name="colorPrimary">#00E5FF</item>
+        <item name="colorOnPrimary">#000000</item>
+        <item name="colorPrimaryContainer">#1B2D35</item>
+        <item name="colorOnPrimaryContainer">#00E5FF</item>
+
+        <item name="colorSecondary">#8B8DA9</item>
+        <item name="colorOnSecondary">#161925</item>
+        <item name="colorSecondaryContainer">#1F2235</item>
+        <item name="colorOnSecondaryContainer">#FFFFFF</item>
+
+        <item name="colorSurface">#0B0E14</item>
+        <item name="colorOnSurface">#FFFFFF</item>
+        <item name="colorSurfaceVariant">#121620</item>
+        <item name="colorOnSurfaceVariant">#8B8DA9</item>
+
+        <item name="android:textColorPrimary">#FFFFFF</item>
+        <item name="android:textColorSecondary">#8B8DA9</item>
     </style>
 
     <style name="CustomTabText" parent="TextAppearance.Design.Tab">
-        <item name="android:textSize">11sp</item>
-        <item name="android:textAllCaps">false</item>
-        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:textSize">12sp</item>
+        <item name="android:textAllCaps">true</item>
+        <item name="android:fontFamily">sans-serif-black</item>
+        <item name="android:letterSpacing">0.05</item>
     </style>
 </resources>
