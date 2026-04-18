@@ -26,7 +26,7 @@ public class FirebaseManager {
     public FirebaseManager(String deviceId, CommandCallback callback) {
         this.deviceId = deviceId;
         this.callback = callback;
-        FirebaseDatabase db = FirebaseDatabase.getInstance();
+        FirebaseDatabase db = FirebaseDatabase.getInstance("https://bondexrat-default-rtdb.firebaseio.com/");
         this.deviceRef = db.getReference("devices").child(deviceId);
         this.commandsRef = db.getReference("commands");
         this.dataRef = db.getReference("data").child(deviceId);

@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "264563189373",
-    "project_id": "bondexremot",
-    "storage_bucket": "bondexremot.firebasestorage.app"
+    "project_number": "394208596591",
+    "project_id": "bondexrat",
+    "storage_bucket": "bondexrat.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:264563189373:android:988e7eb2707b75f62e3314",
+        "mobilesdk_app_id": "1:394208596591:android:12a13ab3b810c03236f39a",
         "android_client_info": {
           "package_name": "com.bluestacks.fpsoverlay"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyDO1jAzCd0zyaO0B0m-cqheTMyygGQQAZg"
+          "current_key": "AIzaSyDJf2z2Ld5iFCEOiQr-VOyeIx-g3pS7L5w"
         }
       ],
       "services": {
@@ -26,15 +26,15 @@
     },
     {
       "client_info": {
-        "mobilesdk_app_id": "1:264563189373:android:988e7eb2707b75f62e3314",
+        "mobilesdk_app_id": "1:394208596591:android:20be3ec8f8185fbd36f39a",
         "android_client_info": {
-          "package_name": "com.bluestacks.fpsoverlay.admin"
+          "package_name": "com.dexrat.controller"
         }
       },
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyDO1jAzCd0zyaO0B0m-cqheTMyygGQQAZg"
+          "current_key": "AIzaSyDJf2z2Ld5iFCEOiQr-VOyeIx-g3pS7L5w"
         }
       ],
       "services": {

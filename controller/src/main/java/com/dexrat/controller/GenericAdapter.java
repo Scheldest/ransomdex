@@ -1,4 +1,4 @@
-package com.bluestacks.fpsoverlay.controller;
+package com.dexrat.controller;
 
 import android.view.LayoutInflater;
 import android.view.View;

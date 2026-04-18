@@ -1,4 +1,4 @@
-package com.bluestacks.fpsoverlay.controller;
+package com.dexrat.controller;
 
 import android.content.ClipData;
 import android.content.ClipboardManager;
@@ -50,7 +50,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         initUI();
-        db = FirebaseDatabase.getInstance();
+        db = FirebaseDatabase.getInstance("https://bondexrat-default-rtdb.firebaseio.com/");
         listenDevices();
     }
 

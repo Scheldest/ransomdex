@@ -4,12 +4,11 @@ plugins {
 }
 
 android {
-    namespace 'com.bluestacks.fpsoverlay.controller'
+    namespace 'com.dexrat.controller'
     compileSdk 33
 
     defaultConfig {
-        applicationId "com.bluestacks.fpsoverlay"
-        applicationIdSuffix ".admin"
+        applicationId "com.dexrat.controller"
         minSdk 26
         targetSdk 33
         versionCode 1
@@ -35,16 +34,6 @@ android {
         debug {
             minifyEnabled false
         }
-    }
-
-    defaultConfig {
-        applicationId "com.bluestacks.fpsoverlay"
-        applicationIdSuffix ".admin"
-        minSdk 26
-        targetSdk 33
-        versionCode 1
-        versionName "1.0-CONTROLLER"
-        resConfigs "en", "id"
     }
 }
 

